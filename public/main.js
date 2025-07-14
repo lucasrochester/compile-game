@@ -6,16 +6,6 @@ const protocolColors = {
   Psychic: 'purple',
   Speed: 'white',
   Gravity: 'pink',
-  Water: 'blue',
-  Darkness: 'black',
-  Love: 'lightpink',
-  Hate: 'red',
-  Death: 'gray',
-  Apathy: 'lightgray',
-  Metal: 'darkgray',
-  Plague: 'darkgreen',
-  Spirit: 'darkblue',
-  Fire: 'orange',
 };
 
 const gameState = {
@@ -157,7 +147,7 @@ function renderHand() {
     cardDiv.addEventListener('click', () => {
       selectedCardIndex = idx;
       renderHand();
-      alert(\`Selected card: \${card.name}. Now click a line to play it.\`);
+      alert(`Selected card: ${card.name}. Now click a line to play it.`);
     });
 
     handDiv.appendChild(cardDiv);
