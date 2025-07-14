@@ -87,7 +87,6 @@ function initializeGame() {
   renderGameBoard();
   renderHand();
   setupFlipToggle();
-  updateRefreshButton();
   updateButtonsState();
 
   setupLineClickDelegation();
@@ -188,16 +187,19 @@ function checkCompile() {
       break;
     }
   }
-  updateButtonsState();
+
   if (gameState.mustCompileLine !== null) {
-    alert(`You must compile the protocol on line ${gameState.mustCompileLine + 1} this turn.`);
+    alert(`Automatically compiling protocol on line ${gameState.mustCompileLine + 1}`);
+    compileProtocol(playerId, gameState.mustCompileLine);
+  } else {
+    updateButtonsState();
   }
 }
 
 function actionPhase() {
   console.log('Action phase');
   if (gameState.mustCompileLine !== null) {
-    alert("You must compile this turn. Use the Compile button.");
+    alert("You must compile this turn. The compile will happen automatically.");
     updateButtonsState();
     return;
   }
@@ -220,6 +222,8 @@ function endPhase() {
   updateFlipToggleButton();
   renderGameBoard();
   renderHand();
+  // Switch to next player
+  gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
   startTurn();
 }
 
@@ -249,8 +253,10 @@ function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
   const compileBtn = document.getElementById('compile-button');
 
+  // Compile button always disabled now (compile happens automatically)
+  compileBtn.disabled = true;
+
   refreshBtn.disabled = gameState.players[gameState.currentPlayer].hand.length >= 5;
-  compileBtn.disabled = gameState.mustCompileLine === null;
 }
 
 document.getElementById('refresh-button').addEventListener('click', () => {
@@ -260,8 +266,7 @@ document.getElementById('refresh-button').addEventListener('click', () => {
 });
 
 document.getElementById('compile-button').addEventListener('click', () => {
-  if (gameState.mustCompileLine === null) return;
-  compileProtocol(gameState.currentPlayer, gameState.mustCompileLine);
+  // This button is disabled; compile happens automatically
 });
 
 function renderGameBoard() {
@@ -299,10 +304,8 @@ function renderGameBoard() {
 
         if (cardDiv.classList.contains('covered') && !card.faceUp) {
           // Covered AND face-down: show just the card back (no top effect)
-          // Leave innerHTML empty; CSS face-down styles will show the "2"
           cardDiv.innerHTML = '';
         } else {
-          // Otherwise, show all card sections as normal
           cardDiv.innerHTML = `
             <div class="card-section card-name">${card.name} (${card.value})</div>
             <div class="card-section card-top">${card.topEffect || ''}</div>
@@ -372,7 +375,7 @@ function renderHand() {
 function playCardOnLine(playerId, handIndex, lineIndex) {
   if (handIndex !== selectedCardIndex) return;
 
-  const card = gameState.players[playerId].hand[handIndex];
+  const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
   const cardProtocol = card.name.split(' ')[0];
   const lineProtocol = gameState.players[playerId].protocols[lineIndex];
 
@@ -381,7 +384,6 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
     return;
   }
 
-  gameState.players[playerId].hand.splice(handIndex, 1)[0];
   card.faceUp = selectedCardFaceUp;
 
   gameState.players[playerId].lines[lineIndex].push(card);
@@ -415,4 +417,5 @@ function updateRefreshButton() {
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
 }
+
 
