@@ -83,11 +83,11 @@ function renderGameBoard() {
         if (!card.faceUp) cardDiv.classList.add('face-down');
         if (i < cards.length - 1) cardDiv.classList.add('covered'); // covered if not top card
 
-        // Provide a CSS variable for border color
         cardDiv.style.borderColor = card.protocolColor || 'gray';
         cardDiv.style.top = `${i * 40}px`;
         cardDiv.style.zIndex = i + 1;
 
+        // When face down, the CSS shows a big "2" and hides text; otherwise show all sections.
         cardDiv.innerHTML = `
           <div class="card-section card-name">${card.name} (${card.value})</div>
           <div class="card-section card-top">${card.topEffect || '-'}</div>
@@ -136,7 +136,7 @@ function renderHand() {
 
   hand.forEach((card, idx) => {
     const cardDiv = document.createElement('div');
-    cardDiv.classList.add('card', 'in-hand');  // special class to avoid face-down hiding
+    cardDiv.classList.add('card', 'in-hand'); // in-hand disables face-down text hiding
     cardDiv.style.borderColor = card.protocolColor || 'gray';
     cardDiv.style.cursor = 'pointer';
 
@@ -168,16 +168,5 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
 
 function flipCard(playerId, lineIndex, cardIndex) {
   const card = gameState.players[playerId].lines[lineIndex][cardIndex];
-  card.faceUp = !card.faceUp;
-  console.log(`${card.name} flipped ${card.faceUp ? 'face up' : 'face down'}`);
-  if (card.faceUp) {
-    triggerMiddleEffect(card);
-  }
-  renderGameBoard();
-}
-
-function triggerMiddleEffect(card) {
-  console.log(`Triggering middle effect for ${card.name}`);
-  // TODO: Implement your middle effect logic here based on card.middleEffect
-}
+ 
 
