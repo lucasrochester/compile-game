@@ -31,7 +31,7 @@ body {
   position: absolute;
   width: 120px;
   height: 170px;
-  background: #333;
+  background: #555; /* brighter so visible */
   border-radius: 8px;
   box-shadow: 0 0 8px rgba(0,0,0,0.7);
   color: #eee;
@@ -41,133 +41,9 @@ body {
   display: flex;
   flex-direction: column;
   padding: 8px 8px 12px 8px;
-  border: 2px solid gray;
+  border: 2px solid yellow; /* visible border */
   transition: top 0.3s ease;
   overflow: hidden;
-  z-index: 1;
-  padding-bottom: 60px;
-}
+  z-inde
 
-.line .card.face-down:not(.in-hand) {
-  background: black !important;
-  color: white !important;
-  font-weight: bold;
-  font-size: 64px;
-  text-align: center;
-  justify-content: center;
-  align-items: center;
-  user-select: none;
-}
-
-.line .card.face-down:not(.in-hand) > * {
-  display: none;
-}
-
-.line .card.face-down:not(.in-hand)::after {
-  content: "2";
-  font-weight: bold;
-  font-size: 64px;
-  color: white;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  user-select: none;
-}
-
-/* Make top, middle, bottom sections equal height */
-.card-section {
-  flex: 1 1 0;
-  overflow-y: auto;
-  white-space: normal;
-  padding: 4px 0;
-  line-height: 1.3;
-  margin-bottom: 6px;
-  border-bottom: 1.5px solid #555;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
-}
-
-.card-name {
-  font-weight: bold;
-  font-size: 14px;
-  border-bottom: 1.5px solid #555;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-  flex: none; /* keep name section fixed height */
-}
-
-/* Hide middle and bottom if covered */
-.card.covered .card-middle,
-.card.covered .card-bottom {
-  display: none !important;
-}
-
-.card.covered .card-top {
-  display: block !important;
-}
-
-/* Hand container */
-#hand-container {
-  border: 1px solid #555;
-  padding: 10px;
-  margin-top: 20px;
-}
-
-#hand {
-  display: flex;
-  gap: 10px;
-}
-
-#hand .card {
-  position: relative;
-  width: 100px;
-  min-height: 140px;
-  cursor: pointer;
-  padding: 8px 8px 12px 8px;
-  background: #444;
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.7);
-  text-align: left;
-  user-select: none;
-  color: #eee;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  word-break: break-word;
-}
-
-#hand .card.face-down.in-hand {
-  background: #444 !important;
-  color: #eee !important;
-}
-
-#hand .card .card-section {
-  max-height: 36px;
-  overflow-y: auto;
-  white-space: normal;
-  line-height: 1.3;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1.5px solid #555;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
-}
-
-#hand .card:hover {
-  background: #666;
-}
-
-.card-top::-webkit-scrollbar,
-.card-middle::-webkit-scrollbar,
-.card-bottom::-webkit-scrollbar {
-  width: 6px;
-}
-
-.card-top::-webkit-scrollbar-thumb,
-.card-middle::-webkit-scrollbar-thumb,
-.card-bottom::-webkit-scrollbar-thumb {
-  background-color: #666;
-  border-radius: 3px;
-}
 
