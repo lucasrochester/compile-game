@@ -83,14 +83,13 @@ function renderGameBoard() {
         if (!card.faceUp) cardDiv.classList.add('face-down');
         if (i < cards.length - 1) cardDiv.classList.add('covered'); // covered if not top card
 
-        const topText = card.topEffect || '-';
-        const middleText = card.middleEffect || '-';
-        const bottomText = card.bottomEffect || '-';
+        // Important: on board, face-down cards should NOT show text => handled by CSS
 
         cardDiv.innerHTML = `
-          <div class="card-section card-top">${card.name} (${card.value})</div>
-          <div class="card-section card-middle">${middleText}</div>
-          <div class="card-section card-bottom">${bottomText}</div>
+          <div class="card-section card-name">${card.name} (${card.value})</div>
+          <div class="card-section card-top">${card.topEffect || '-'}</div>
+          <div class="card-section card-middle">${card.middleEffect || '-'}</div>
+          <div class="card-section card-bottom">${card.bottomEffect || '-'}</div>
         `;
 
         cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
@@ -138,8 +137,13 @@ function renderHand() {
 
   hand.forEach((card, idx) => {
     const cardDiv = document.createElement('div');
-    cardDiv.classList.add('card');
-    cardDiv.textContent = card.name;
+    cardDiv.classList.add('card', 'in-hand');  // add 'in-hand' class to override face-down hiding
+    cardDiv.innerHTML = `
+      <div class="card-section card-name">${card.name} (${card.value})</div>
+      <div class="card-section card-top">${card.topEffect || '-'}</div>
+      <div class="card-section card-middle">${card.middleEffect || '-'}</div>
+      <div class="card-section card-bottom">${card.bottomEffect || '-'}</div>
+    `;
     cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
     cardDiv.style.cursor = 'pointer';
     cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#333';
@@ -173,4 +177,3 @@ function triggerMiddleEffect(card) {
   console.log(`Triggering middle effect for ${card.name}`);
   // TODO: Implement your middle effect logic here based on card.middleEffect
 }
-
