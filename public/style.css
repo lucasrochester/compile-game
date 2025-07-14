@@ -1,4 +1,3 @@
-/* Basic styles same as before */
 body {
   font-family: Arial, sans-serif;
   background: #222;
@@ -28,7 +27,6 @@ body {
   white-space: nowrap;
 }
 
-/* Card base */
 .line .card {
   position: absolute;
   width: 120px;
@@ -45,8 +43,8 @@ body {
   padding: 4px 8px;
   border: 2px solid gray;
   transition: top 0.3s ease;
-  overflow: visible; /* CHANGE: was hidden, now visible so top can show outside */
-  z-index: 1; /* Base stacking */
+  overflow: visible;
+  z-index: 1;
 }
 
 /* Face-down cards: black background with big "2" */
@@ -61,12 +59,10 @@ body {
   user-select: none;
 }
 
-/* Hide normal text on face-down cards */
 .line .card.face-down:not(.in-hand) > * {
   display: none;
 }
 
-/* Show only big 2 on face-down */
 .line .card.face-down:not(.in-hand)::after {
   content: "2";
   font-weight: bold;
@@ -79,7 +75,6 @@ body {
   user-select: none;
 }
 
-/* Card sections */
 .card-section {
   flex: 1 1 0;
   padding: 6px 8px;
@@ -91,7 +86,6 @@ body {
   line-height: 1.4;
 }
 
-/* Name section */
 .card-name {
   font-weight: bold;
   border-bottom: 1.5px solid #555;
@@ -101,11 +95,9 @@ body {
   padding-left: 4px;
   padding-right: 4px;
   z-index: 3;
-  position: relative; /* So it stacks above cards below */
+  position: relative;
 }
 
-/* Top effect section */
-/* MAKE THIS position relative and high z-index so it stays visible when covered */
 .card-top {
   font-style: italic;
   border-bottom: 1.5px solid #555;
@@ -118,14 +110,13 @@ body {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #666 transparent;
-  position: relative; /* Added */
-  z-index: 5; /* High so it’s above other cards */
-  background: #333; /* To cover any bleed from cards below */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Slight shadow for clarity */
-  margin-bottom: 4px; /* Separate visually from middle */
+  position: relative;
+  z-index: 5;
+  background: #333;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin-bottom: 4px;
 }
 
-/* Middle effect */
 .card-middle {
   font-style: italic;
   border-bottom: 1.5px solid #555;
@@ -140,7 +131,6 @@ body {
   scrollbar-color: #666 transparent;
 }
 
-/* Bottom effect */
 .card-bottom {
   font-style: italic;
   font-size: 12px;
@@ -154,20 +144,19 @@ body {
   scrollbar-color: #666 transparent;
 }
 
-/* Covered cards: hide middle and bottom */
+/* COVERED cards hide only middle and bottom — keep top and name visible */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none !important;
 }
 
-/* Ensure top effect is visible on covered cards (should already be from z-index, but just in case) */
 .card.covered .card-top {
   display: flex !important;
   position: relative;
   z-index: 5;
 }
 
-/* Hand styles */
+/* Hand styling */
 #hand-container {
   border: 1px solid #555;
   padding: 10px;
@@ -198,7 +187,6 @@ body {
   word-break: break-word;
 }
 
-/* Hand cards always show all text, with scroll on effect sections */
 #hand .card.face-down.in-hand {
   background: #444 !important;
   color: #eee !important;
@@ -216,5 +204,18 @@ body {
 
 #hand .card:hover {
   background: #666;
+}
+
+.card-top::-webkit-scrollbar,
+.card-middle::-webkit-scrollbar,
+.card-bottom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card-top::-webkit-scrollbar-thumb,
+.card-middle::-webkit-scrollbar-thumb,
+.card-bottom::-webkit-scrollbar-thumb {
+  background-color: #666;
+  border-radius: 3px;
 }
 
