@@ -408,5 +408,26 @@ function updateRefreshButton() {
   btn.disabled = hand.length >= 5;
 }
 
+// Minimal test: override line click handlers on Player 1 lines to just log clicks
+document.addEventListener('DOMContentLoaded', () => {
+  const player1Lines = document.querySelectorAll('#player1 .line');
+  player1Lines.forEach((line, idx) => {
+    line.onclick = () => {
+      console.log(`TEST: Player 1 Line ${idx} clicked.`);
+      alert(`TEST: Player 1 Line ${idx} clicked.`);
+    };
+    line.style.cursor = 'pointer';
+  });
+
+  // Override hand card clicks to just log card info
+  const handDiv = document.getElementById('hand');
+  handDiv.querySelectorAll('.card').forEach((cardDiv, idx) => {
+    cardDiv.onclick = () => {
+      console.log(`TEST: Hand card ${idx} clicked.`);
+      alert(`TEST: Hand card ${idx} clicked.`);
+    };
+    cardDiv.style.cursor = 'pointer';
+  });
+});
 
 
