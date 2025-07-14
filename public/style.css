@@ -77,16 +77,16 @@ body {
   user-select: none;
 }
 
-/* Four equal vertical sections with good padding and wrapping */
+/* Four vertical sections with padding and wrapping */
 .card-section {
   flex: 1 1 0;
-  padding: 4px 6px;
+  padding: 6px 8px;
   box-sizing: border-box;
   overflow-wrap: break-word;
   white-space: normal;
   display: flex;
-  align-items: center;
-  line-height: 1.3;
+  align-items: flex-start; /* Changed from center for better top alignment */
+  line-height: 1.4;
 }
 
 /* Name always visible, with bottom border */
@@ -111,6 +111,8 @@ body {
   padding-left: 4px;
   padding-right: 4px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
 }
 
 /* Scroll if text is too long */
@@ -124,6 +126,8 @@ body {
   padding-left: 4px;
   padding-right: 4px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
 }
 
 .card-bottom {
@@ -135,12 +139,14 @@ body {
   padding-left: 4px;
   padding-right: 4px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
 }
 
 /* Covered cards: hide only middle and bottom sections (name and top remain visible) */
 .card.covered .card-middle,
 .card.covered .card-bottom {
-  display: none;
+  display: none !important; /* force hide */
 }
 
 /* Hand styling */
@@ -188,4 +194,18 @@ body {
 
 #hand .card:hover {
   background: #666;
+}
+
+/* Scrollbar styling for webkit browsers */
+.card-top::-webkit-scrollbar,
+.card-middle::-webkit-scrollbar,
+.card-bottom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.card-top::-webkit-scrollbar-thumb,
+.card-middle::-webkit-scrollbar-thumb,
+.card-bottom::-webkit-scrollbar-thumb {
+  background-color: #666;
+  border-radius: 3px;
 }
