@@ -89,6 +89,38 @@ function initializeGame() {
   setupFlipToggle();
   updateRefreshButton();
   updateButtonsState();
+
+  setupLineClickDelegation(); // Setup delegated click listener here
+}
+
+function setupLineClickDelegation() {
+  const player1LinesContainer = document.querySelector('#player1 .lines');
+  player1LinesContainer.addEventListener('click', (e) => {
+    let lineDiv = e.target;
+    while (lineDiv && !lineDiv.classList.contains('line')) {
+      lineDiv = lineDiv.parentElement;
+    }
+    if (!lineDiv) return;
+
+    const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
+    if (isNaN(lineIndex)) return;
+
+    console.log(`Delegated click on line ${lineIndex}`);
+
+    if (selectedCardIndex === null) {
+      alert('No card selected to play!');
+      return;
+    }
+
+    const playerId = 1; // Always player 1 for now
+    playCardOnLine(playerId, selectedCardIndex, lineIndex);
+    selectedCardIndex = null;
+    selectedCardFaceUp = false;
+    updateFlipToggleButton();
+    renderGameBoard();
+    renderHand();
+    updateButtonsState();
+  });
 }
 
 function drawCard(playerId) {
@@ -272,27 +304,8 @@ function renderGameBoard() {
           <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
-        // Always enable line clicks for player 1 for testing:
-        if (playerId === 1) {
-          lineDiv.style.cursor = 'pointer';
-          lineDiv.onclick = () => {
-            console.log(`Clicked line ${idx} for player ${playerId}`);
-            if (selectedCardIndex !== null) {
-              playCardOnLine(playerId, selectedCardIndex, idx);
-              selectedCardIndex = null;
-              selectedCardFaceUp = false;
-              updateFlipToggleButton();
-              renderGameBoard();
-              renderHand();
-              updateButtonsState();
-            } else {
-              console.log("No card selected to play");
-            }
-          };
-        } else {
-          lineDiv.style.cursor = 'default';
-          lineDiv.onclick = null;
-        }
+        // Remove individual onclick handlers here to avoid conflict
+        lineDiv.style.cursor = playerId === 1 ? 'pointer' : 'default';
 
         lineDiv.appendChild(cardDiv);
       });
@@ -360,8 +373,8 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
 
   const card = gameState.players[playerId].hand[handIndex];
   console.log('Card to play:', card.name);
-  
-  // For now, skip protocol matching — allow playing any card on any line:
+
+  // For now, skip protocol line matching:
   // const cardProtocol = card.name.split(' ')[0];
   // const lineProtocol = gameState.players[playerId].protocols[lineIndex];
   // if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
@@ -403,5 +416,6 @@ function updateRefreshButton() {
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
 }
+
 
 
