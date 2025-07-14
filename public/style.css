@@ -38,16 +38,48 @@ body {
   color: #eee;
   cursor: pointer;
   user-select: none;
-  padding: 10px;
-  text-align: center;
+  padding: 6px 8px;
   box-sizing: border-box;
-  transition: top 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .line .card.face-down {
   filter: brightness(0.4);
   font-style: italic;
-  color: #aaa;
+  color: transparent; /* Hide all text when face down */
+  user-select: none;
+}
+
+.card-section {
+  padding: 2px 0;
+  font-size: 12px;
+  line-height: 1.1;
+  overflow-wrap: break-word;
+}
+
+.card-top {
+  flex: 0 0 auto;
+  font-weight: bold;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  border-bottom: 1px solid #555;
+}
+
+.card-middle, .card-bottom {
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-style: italic;
+  font-size: 11px;
+  color: #ccc;
+}
+
+/* When card is covered: only show top section */
+.card.covered .card-middle,
+.card.covered .card-bottom {
+  display: none;
 }
 
 #hand-container {
