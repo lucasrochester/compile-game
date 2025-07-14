@@ -90,7 +90,7 @@ function initializeGame() {
   updateRefreshButton();
   updateButtonsState();
 
-  setupLineClickDelegation(); // Setup delegated click listener here
+  setupLineClickDelegation();
 }
 
 function setupLineClickDelegation() {
@@ -105,14 +105,12 @@ function setupLineClickDelegation() {
     const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
     if (isNaN(lineIndex)) return;
 
-    console.log(`Delegated click on line ${lineIndex}`);
-
     if (selectedCardIndex === null) {
       alert('No card selected to play!');
       return;
     }
 
-    const playerId = 1; // Always player 1 for now
+    const playerId = 1;
     playCardOnLine(playerId, selectedCardIndex, lineIndex);
     selectedCardIndex = null;
     selectedCardFaceUp = false;
@@ -304,7 +302,6 @@ function renderGameBoard() {
           <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
-        // Remove individual onclick handlers here to avoid conflict
         lineDiv.style.cursor = playerId === 1 ? 'pointer' : 'default';
 
         lineDiv.appendChild(cardDiv);
@@ -351,7 +348,6 @@ function renderHand() {
     `;
 
     cardDiv.addEventListener('click', () => {
-      console.log(`Selected card index: ${idx}`);
       selectedCardIndex = idx;
       selectedCardFaceUp = card.faceUp;
       updateFlipToggleButton();
@@ -365,22 +361,16 @@ function renderHand() {
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
-  console.log('Attempting to play card:', { playerId, handIndex, lineIndex, selectedCardIndex });
-  if (handIndex !== selectedCardIndex) {
-    console.warn('Hand index does not match selectedCardIndex');
-    return;
-  }
+  if (handIndex !== selectedCardIndex) return;
 
   const card = gameState.players[playerId].hand[handIndex];
-  console.log('Card to play:', card.name);
+  const cardProtocol = card.name.split(' ')[0];
+  const lineProtocol = gameState.players[playerId].protocols[lineIndex];
 
-  // For now, skip protocol line matching:
-  // const cardProtocol = card.name.split(' ')[0];
-  // const lineProtocol = gameState.players[playerId].protocols[lineIndex];
-  // if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
-  //   alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
-  //   return;
-  // }
+  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
+    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+    return;
+  }
 
   gameState.players[playerId].hand.splice(handIndex, 1)[0];
   card.faceUp = selectedCardFaceUp;
@@ -416,6 +406,5 @@ function updateRefreshButton() {
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
 }
-
 
 
