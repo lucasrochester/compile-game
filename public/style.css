@@ -47,7 +47,7 @@ body {
   padding: 4px 8px;
 }
 
-/* Face-down cards: fully black background with large "2" centered */
+/* Face-down cards: black background with big "2" */
 .line .card.face-down:not(.in-hand) {
   background: black !important;
   color: white !important;
@@ -59,12 +59,12 @@ body {
   user-select: none;
 }
 
-/* Hide all normal text on face-down cards */
+/* Hide normal text on face-down cards */
 .line .card.face-down:not(.in-hand) > * {
   display: none;
 }
 
-/* Show only the big 2 for face-down */
+/* Show only big 2 on face-down */
 .line .card.face-down:not(.in-hand)::after {
   content: "2";
   font-weight: bold;
@@ -77,7 +77,6 @@ body {
   user-select: none;
 }
 
-/* Four vertical sections with padding and wrapping */
 .card-section {
   flex: 1 1 0;
   padding: 6px 8px;
@@ -85,11 +84,10 @@ body {
   overflow-wrap: break-word;
   white-space: normal;
   display: flex;
-  align-items: flex-start; /* Changed from center for better top alignment */
+  align-items: flex-start;
   line-height: 1.4;
 }
 
-/* Name always visible, with bottom border */
 .card-name {
   font-weight: bold;
   border-bottom: 1.5px solid #555;
@@ -100,7 +98,6 @@ body {
   padding-right: 4px;
 }
 
-/* Effects have borders except bottom one */
 .card-top {
   font-style: italic;
   border-bottom: 1.5px solid #555;
@@ -115,7 +112,6 @@ body {
   scrollbar-color: #666 transparent;
 }
 
-/* Scroll if text is too long */
 .card-middle {
   font-style: italic;
   border-bottom: 1.5px solid #555;
@@ -143,13 +139,18 @@ body {
   scrollbar-color: #666 transparent;
 }
 
-/* Covered cards: hide only middle and bottom sections (name and top remain visible) */
+/* Covered cards hide only middle and bottom */
 .card.covered .card-middle,
 .card.covered .card-bottom {
-  display: none !important; /* force hide */
+  display: none !important;
 }
 
-/* Hand styling */
+/* Ensure top is always visible even when covered */
+.card.covered .card-top {
+  display: flex !important;
+}
+
+/* Hand styles */
 #hand-container {
   border: 1px solid #555;
   padding: 10px;
@@ -164,7 +165,8 @@ body {
 #hand .card {
   position: relative;
   width: 100px;
-  height: 140px;
+  height: auto;
+  min-height: 140px;
   cursor: pointer;
   padding: 6px 8px;
   background: #444;
@@ -176,9 +178,9 @@ body {
   display: flex;
   flex-direction: column;
   overflow: visible;
+  word-break: break-word;
 }
 
-/* Hand cards always show all text */
 #hand .card.face-down.in-hand {
   background: #444 !important;
   color: #eee !important;
@@ -186,17 +188,18 @@ body {
 
 #hand .card .card-section {
   flex: none;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   overflow: visible;
   white-space: normal;
   line-height: 1.3;
+  max-height: 60px;
+  overflow-wrap: break-word;
 }
 
 #hand .card:hover {
   background: #666;
 }
 
-/* Scrollbar styling for webkit browsers */
 .card-top::-webkit-scrollbar,
 .card-middle::-webkit-scrollbar,
 .card-bottom::-webkit-scrollbar {
