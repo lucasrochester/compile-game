@@ -46,6 +46,14 @@ function renderGameBoard() {
   if (playerId === gameState.currentPlayer) {
     flipCard(playerId, idx, i);
   }
+    cardDiv.innerHTML = `
+  <div><strong>${card.name} (${card.value})</strong></div>
+  <div><em>Top: ${card.topEffect || '-'}</em></div>
+  <div><em>Middle: ${card.middleEffect || '-'}</em></div>
+  <div><em>Bottom: ${card.bottomEffect || '-'}</em></div>
+`;
+cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+
 });
 
   cardDiv.classList.add('card');
@@ -126,3 +134,54 @@ function triggerMiddleEffect(card) {
   console.log(`Triggering middle effect for ${card.name}`);
   // TODO: implement actual card middle effects here
 }
+
+let allCardsData = null;
+
+fetch('../data/cards.json')
+  .then(res => res.json())
+  .then(data => {
+    allCardsData = data;
+    initializeGame();
+  });
+
+function findCard(protocol, value) {
+  if (!allCardsData || !allCardsData.protocols[protocol]) return null;
+  return allCardsData.protocols[protocol].cards.find(c => c.value === value);
+}
+
+function initializeGame() {
+  const life3 = findCard('Life', 3);
+  const light4 = findCard('Light', 4);
+
+  gameState.players[1].hand.push({ ...life3, faceUp: true, protocolColor: 'green' });
+  gameState.players[1].lines[0].push({ ...light4, faceUp: true, protocolColor: 'yellow' });
+
+  renderGameBoard();
+  renderHand();
+}
+
+const protocolColors = {
+  Life: 'green',
+  Light: 'yellow',
+  Psychic: 'purple',
+  Speed: 'white',
+  Gravity: 'pink',
+  Water: 'blue',
+  Darkness: 'black',
+  Love: 'lightpink',
+  Hate: 'red',
+  Death: 'gray',
+  Apathy: 'lightgray',
+  Metal: 'darkgray',
+  Plague: 'darkgreen',
+  Spirit: 'darkblue',
+  Fire: 'orange',
+};
+
+function findCard(protocol, value) {
+  if (!allCardsData || !allCardsData.protocols[protocol]) return null;
+  const card = allCardsData.protocols[protocol].cards.find(c => c.value === value);
+  if (card) card.protocolColor = protocolColors[protocol];
+  return card;
+}
+
