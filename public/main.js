@@ -113,7 +113,7 @@ function renderGameBoard() {
           <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
-        // *** NO flipping cards on board anymore! ***
+        // No flipping on board cards anymore
 
         lineDiv.appendChild(cardDiv);
       });
@@ -186,11 +186,9 @@ function renderHand() {
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
-  if (handIndex !== selectedCardIndex) return; // safety check
+  if (handIndex !== selectedCardIndex) return;
 
   const card = gameState.players[playerId].hand[handIndex];
-
-  // Extract protocol from card name
   const cardProtocol = card.name.split(' ')[0];
 
   if (selectedCardFaceUp) {
@@ -201,13 +199,11 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
     }
   }
 
-  // Remove from hand and add to line with faceUp set by toggle
   gameState.players[playerId].hand.splice(handIndex, 1)[0];
   card.faceUp = selectedCardFaceUp;
 
   gameState.players[playerId].lines[lineIndex].push(card);
 
-  // Reset selection and toggle after playing
   selectedCardIndex = null;
   selectedCardFaceUp = false;
   updateFlipToggleButton();
