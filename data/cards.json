@@ -1,0 +1,172 @@
+{
+  "protocols": {
+    "Life": {
+      "color": "green",
+      "cards": [
+        {"name":"Life 0","points":0,"effects":{"top":{"end":"If this card is covered, delete this card."},"middle":"Play the top card of your deck face down in each line where you have a card.","bottom":null}},
+        {"name":"Life 1","points":1,"effects":{"top":null,"middle":"Flip a card. Flip a card.","bottom":null}},
+        {"name":"Life 2","points":2,"effects":{"top":null,"middle":"Draw 1 card. You MAY flip 1 face down card.","bottom":null}},
+        {"name":"Life 3","points":3,"effects":{"top":null,"middle":null,"bottom":"When this card would be covered: Play the top card of your deck face-down in another line."}},
+        {"name":"Life 4","points":4,"effects":{"top":null,"middle":"If this card is covering a card, draw 1 card.","bottom":null}},
+        {"name":"Life 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Light": {
+      "color": "yellow",
+      "cards": [
+        {"name":"Light 0","points":0,"effects":{"top":null,"middle":"Flip 1 card. Draw cards equal to that card's value.","bottom":null}},
+        {"name":"Light 1","points":1,"effects":{"top":null,"middle":null,"bottom":"End: Draw 1 card."}},
+        {"name":"Light 2","points":2,"effects":{"top":null,"middle":"Draw 2 cards. Reveal 1 face down card. You may shift OR flip that card.","bottom":null}},
+        {"name":"Light 3","points":3,"effects":{"top":null,"middle":"Shift all face down cards in this line to another line.","bottom":null}},
+        {"name":"Light 4","points":4,"effects":{"top":null,"middle":"Your opponent reveals their hand.","bottom":null}},
+        {"name":"Light 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Psychic": {
+      "color": "purple",
+      "cards": [
+        {"name":"Psychic 0","points":0,"effects":{"top":null,"middle":"Draw 2 cards. Your opponent discards 2 cards, then reveals their hand.","bottom":null}},
+        {"name":"Psychic 1","points":1,"effects":{"top":"Your opponent can only play cards face-down.","middle":null,"bottom":"Start: flip this card."}},
+        {"name":"Psychic 2","points":2,"effects":{"top":null,"middle":"Your opponent discards 2 cards. Rearrange their protocols.","bottom":null}},
+        {"name":"Psychic 3","points":3,"effects":{"top":null,"middle":"Your opponent discards 1 card. Shift 1 of their cards.","bottom":null}},
+        {"name":"Psychic 4","points":4,"effects":{"top":null,"middle":null,"bottom":"End: You may return 1 of your opponent's cards. If you do, flip this card."}},
+        {"name":"Psychic 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Speed": {
+      "color": "white",
+      "cards": [
+        {"name":"Speed 0","points":0,"effects":{"top":null,"middle":"Play 1 card.","bottom":null}},
+        {"name":"Speed 1","points":1,"effects":{"top":"After you clear cache: Draw 1 card.","middle":"Draw 2 cards.","bottom":null}},
+        {"name":"Speed 2","points":2,"effects":{"top":"When this card would be deleted by compiling: Shift this card instead, even if this card is covered.","middle":null,"bottom":null}},
+        {"name":"Speed 3","points":3,"effects":{"top":null,"middle":"Shift 1 of your other cards.","bottom":"End: you may shift one of your cards. If you do, flip this card."}},
+        {"name":"Speed 4","points":4,"effects":{"top":null,"middle":"Shift one of your opponent's face down cards.","bottom":null}},
+        {"name":"Speed 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Gravity": {
+      "color": "pink",
+      "cards": [
+        {"name":"Gravity 0","points":0,"effects":{"top":null,"middle":"For every 2 cards in this line, play the top card of your deck face down under this card.","bottom":null}},
+        {"name":"Gravity 1","points":1,"effects":{"top":null,"middle":"Draw 2 cards. Shift 1 card either to or from this line.","bottom":null}},
+        {"name":"Gravity 2","points":2,"effects":{"top":null,"middle":"Flip 1 card. Shift that card to this line.","bottom":null}},
+        {"name":"Gravity 4","points":4,"effects":{"top":null,"middle":"Shift 1 face down card to this line.","bottom":null}},
+        {"name":"Gravity 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}},
+        {"name":"Gravity 6","points":6,"effects":{"top":null,"middle":"Your opponent plays the top card of their deck face down in this line.","bottom":null}}
+      ]
+    },
+    "Water": {
+      "color": "blue",
+      "cards": [
+        {"name":"Water 0","points":0,"effects":{"top":null,"middle":"Flip 1 other card. Flip this card.","bottom":null}},
+        {"name":"Water 1","points":1,"effects":{"top":null,"middle":"Play the top card of your deck face-down in each other line.","bottom":null}},
+        {"name":"Water 2","points":2,"effects":{"top":null,"middle":"Draw 2 cards. Rearrange your protocols.","bottom":null}},
+        {"name":"Water 3","points":3,"effects":{"top":null,"middle":"Return all cards with a value of 2 in one line.","bottom":null}},
+        {"name":"Water 4","points":4,"effects":{"top":null,"middle":null,"bottom":"Return 1 of your cards."}},
+        {"name":"Water 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Darkness": {
+      "color": "black",
+      "cards": [
+        {"name":"Darkness 0","points":0,"effects":{"top":null,"middle":"Draw 3 cards. Shift one of your opponent's covered cards.","bottom":null}},
+        {"name":"Darkness 1","points":1,"effects":{"top":null,"middle":"Flip 1 of your opponent's cards. You MAY shift that card.","bottom":null}},
+        {"name":"Darkness 2","points":2,"effects":{"top":"All face down cards in this stack have a value of 4.","middle":"You may flip 1 covered card in this line.","bottom":null}},
+        {"name":"Darkness 3","points":3,"effects":{"top":null,"middle":"Play 1 card face down in another line.","bottom":null}},
+        {"name":"Darkness 4","points":4,"effects":{"top":null,"middle":null,"bottom":"When this card would be covered: First delete the lowest value covered card in this line."}},
+        {"name":"Darkness 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Love": {
+      "color": "lightpink",
+      "cards": [
+        {"name":"Love 1","points":1,"effects":{"top":null,"middle":"Draw the top card of your opponent's deck.","bottom":"End: You may give 1 card from your hand to your opponent. If you do, draw 2 cards."}},
+        {"name":"Love 2","points":2,"effects":{"top":null,"middle":"Your opponent draws 1 card. Refresh.","bottom":null}},
+        {"name":"Love 3","points":3,"effects":{"top":null,"middle":"Take 1 random card from your opponent's hand. Give 1 card from your hand to your opponent.","bottom":null}},
+        {"name":"Love 4","points":4,"effects":{"top":null,"middle":"Reveal 1 card from your hand. Flip 1 card.","bottom":null}},
+        {"name":"Love 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}},
+        {"name":"Love 6","points":6,"effects":{"top":null,"middle":"Your opponent draws 2 cards.","bottom":null}}
+      ]
+    },
+    "Hate": {
+      "color": "red",
+      "cards": [
+        {"name":"Hate 0","points":0,"effects":{"top":null,"middle":"Delete 1 card.","bottom":null}},
+        {"name":"Hate 1","points":1,"effects":{"top":null,"middle":"Discard 3 cards. Delete 1 card. Delete 1 card.","bottom":null}},
+        {"name":"Hate 2","points":2,"effects":{"top":"Delete your highest value uncovered card. Delete your opponent's highest value uncovered card.","middle":null,"bottom":null}},
+        {"name":"Hate 3","points":3,"effects":{"top":"After you delete cards: Draw 1 card.","middle":null,"bottom":null}},
+        {"name":"Hate 4","points":4,"effects":{"top":null,"middle":null,"bottom":"When this card would be covered: First delete the lowest value covered card in this line."}},
+        {"name":"Hate 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Death": {
+      "color": "gray",
+      "cards": [
+        {"name":"Death 0","points":0,"effects":{"top":null,"middle":"Delete 1 card from each other line.","bottom":null}},
+        {"name":"Death 1","points":1,"effects":{"top":"Start: you may draw 1 card. If you do, delete 1 other card, then delete this card.","middle":null,"bottom":null}},
+        {"name":"Death 2","points":2,"effects":{"top":null,"middle":"Delete all cards in 1 line with values of 1 or 2.","bottom":null}},
+        {"name":"Death 3","points":3,"effects":{"top":null,"middle":"Delete 1 face down card.","bottom":null}},
+        {"name":"Death 4","points":4,"effects":{"top":null,"middle":null,"bottom":"Delete a card with a value of 0 or 1."}},
+        {"name":"Death 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Apathy": {
+      "color": "lightgray",
+      "cards": [
+        {"name":"Apathy 0","points":0,"effects":{"top":"Your total value in this line is increased by 1 for each face down card in this line.","middle":null,"bottom":null}},
+        {"name":"Apathy 1","points":1,"effects":{"top":null,"middle":"Flip all other face up cards in this line.","bottom":null}},
+        {"name":"Apathy 2","points":2,"effects":{"top":"Ignore all middle commands on cards in this line.","middle":null,"bottom":"When this card would be covered: First flip this card."}},
+        {"name":"Apathy 3","points":3,"effects":{"top":null,"middle":"Flip one of your opponents face up cards.","bottom":null}},
+        {"name":"Apathy 4","points":4,"effects":{"top":null,"middle":"You may flip 1 of your face up covered cards.","bottom":null}},
+        {"name":"Apathy 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Metal": {
+      "color": "darkgray",
+      "cards": [
+        {"name":"Metal 0","points":0,"effects":{"top":"Your opponent's total value in this line is reduced by 2.","middle":"Flip 1 card.","bottom":null}},
+        {"name":"Metal 1","points":1,"effects":{"top":null,"middle":"Draw 2 cards. Your opponent cannot compile next turn.","bottom":"Start: Either discard 1 card or flip this card."}},
+        {"name":"Metal 2","points":2,"effects":{"top":"Your opponent cannot play cards face down in this line.","middle":null,"bottom":null}},
+        {"name":"Metal 3","points":3,"effects":{"top":null,"middle":"Draw 1 card. Delete all cards in 1 other line with 8 or more cards.","bottom":null}},
+        {"name":"Metal 4","points":4,"effects":{"top":null,"middle":"Return 1 of your cards.","bottom":null}},
+        {"name":"Metal 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}},
+        {"name":"Metal 6","points":6,"effects":{"top":"When this card would be covered or flipped: First, delete this card.","middle":null,"bottom":null}}
+      ]
+    },
+    "Plague": {
+      "color": "darkgreen",
+      "cards": [
+        {"name":"Plague 0","points":0,"effects":{"top":null,"middle":"Your opponent discards 1 card.","bottom":"Your opponent cannot play cards in this line."}},
+        {"name":"Plague 1","points":1,"effects":{"top":"After your opponent discards cards: Draw 1 card.","middle":"Your opponent discards 1 card.","bottom":null}},
+        {"name":"Plague 2","points":2,"effects":{"top":null,"middle":"Discard 1 or more cards. Your opponent discards the amount of cards discarded plus 1.","bottom":null}},
+        {"name":"Plague 3","points":3,"effects":{"top":null,"middle":"Flip every other uncovered face up card.","bottom":null}},
+        {"name":"Plague 4","points":4,"effects":{"top":null,"middle":null,"bottom":"End: Your opponent deletes 1 of their face down cards. You may flip this card."}},
+        {"name":"Plague 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}}
+      ]
+    },
+    "Spirit": {
+      "color": "darkblue",
+      "cards": [
+        {"name":"Spirit 0","points":0,"effects":{"top":null,"middle":"Refresh. Draw 1 card.","bottom":"Skip your check cache phase."}},
+        {"name":"Spirit 1","points":1,"effects":{"top":"When you play cards face up, they may be played without matching protocols.","middle":"Draw 2 cards.","bottom":"Start: Either discard 1 card or flip this card."}},
+        {"name":"Spirit 2","points":2,"effects":{"top":null,"middle":"You may flip 1 card.","bottom":null}},
+        {"name":"Spirit 3","points":3,"effects":{"top":"After you draw cards: You may shift this card, even if this card is covered.","middle":null,"bottom":null}},
+        {"name":"Spirit 4","points":4,"effects":{"top":null,"middle":"Swap the positions of 2 of your protocols.","bottom":null}},
+        {"name":"Spirit 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}},
+        {"name":"Spirit 6","points":6,"effects":{"top":null,"middle":"Draw 3 cards.","bottom":null}}
+      ]
+    },
+    "Fire": {
+      "color": "orange",
+      "cards": [
+        {"name":"Fire 0","points":0,"effects":{"top":null,"middle":"Flip 1 other card. Draw 2 cards.","bottom":"When this card would be covered: First draw 1 card and flip 1 other card."}},
+        {"name":"Fire 1","points":1,"effects":{"top":null,"middle":"Discard 1 card. If you do, delete 1 card.","bottom":null}},
+        {"name":"Fire 2","points":2,"effects":{"top":null,"middle":"Discard 1 card. If you do, return 1 card.","bottom":null}},
+        {"name":"Fire 3","points":3,"effects":{"top":null,"middle":null,"bottom":"End: You may discard 1 card. If you do, flip 1 card."}},
+        {"name":"Fire 4","points":4,"effects":{"top":null,"middle":"Discard 1 or more cards. Draw the amount discarded plus 1.","bottom":null}},
+        {"name":"Fire 5","points":5,"effects":{"top":null,"middle":"You discard 1 card.","bottom":null}},
+        {"name":"Fire 6","points":6,"effects":{"top":null,"middle":"Draw 3 cards.","bottom":null}}
+      ]
+    }
+  }
+}
