@@ -27,6 +27,13 @@ body {
   white-space: nowrap;
 }
 
+.protocol-name {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
 .line .card {
   position: absolute;
   width: 120px;
@@ -41,7 +48,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 8px 8px 8px 8px;
-  border: 2px solid gray; /* default border */
+  border: 2px solid gray;
   transition: top 0.3s ease;
   overflow: hidden;
   z-index: 1;
@@ -60,7 +67,7 @@ body {
   user-select: none;
   padding: 0;
   display: flex;
-  border-color: black !important; /* black border for face-down */
+  border-color: black !important;
 }
 
 .line .card.face-down:not(.in-hand) > * {
@@ -102,7 +109,7 @@ body {
 
 .card-name {
   font-weight: bold;
-  font-size: 12px; /* smaller to match hand cards */
+  font-size: 12px;
   flex: none;
   margin-bottom: 6px;
   padding-bottom: 4px;
@@ -150,14 +157,14 @@ body {
   flex-direction: column;
   overflow: hidden;
   word-break: break-word;
-  border: 2px solid gray; /* default border; overridden in JS */
+  border: 2px solid gray;
 }
 
 /* Remove protocol-colored border on face-down cards (hand) */
 #hand .card.face-down.in-hand {
   background: #444 !important;
   color: #eee !important;
-  border-color: black !important; /* black border for face-down */
+  border-color: black !important;
 }
 
 /* Smaller text in hand card sections */
@@ -205,4 +212,3 @@ body {
   background-color: #666;
   border-radius: 3px;
 }
-
