@@ -48,9 +48,8 @@ body {
 
 .line .card.face-down {
   filter: brightness(0.4);
-  font-style: italic;
-  color: transparent; /* Hide all text when face down */
   user-select: none;
+  color: transparent !important; /* Hide all text */
 }
 
 .card-section {
@@ -58,6 +57,7 @@ body {
   font-size: 12px;
   line-height: 1.1;
   overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .card-top {
@@ -67,14 +67,16 @@ body {
   text-overflow: ellipsis;
   overflow: hidden;
   border-bottom: 1px solid #555;
+  min-height: 18px;
 }
 
 .card-middle, .card-bottom {
   flex: 1 1 auto;
-  overflow: hidden;
   font-style: italic;
   font-size: 11px;
   color: #ccc;
+  overflow-y: auto;
+  max-height: 45px; /* limit height, scroll if needed */
 }
 
 /* When card is covered: only show top section */
@@ -104,22 +106,6 @@ body {
   text-align: center;
   user-select: none;
   color: #eee;
-}
-
-#hand .card:hover {
-  background: #666;
-}
-
-
-#hand .card {
-  width: 100px;
-  cursor: pointer;
-  padding: 10px;
-  background: #444;
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.7);
-  text-align: center;
-  user-select: none;
 }
 
 #hand .card:hover {
