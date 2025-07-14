@@ -157,7 +157,7 @@ function renderHand() {
     cardDiv.addEventListener('click', () => {
       selectedCardIndex = idx;
       renderHand();
-      alert(`Selected card: ${card.name}. Now click a line to play it.`);
+      alert(\`Selected card: \${card.name}. Now click a line to play it.\`);
     });
 
     handDiv.appendChild(cardDiv);
@@ -166,17 +166,15 @@ function renderHand() {
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false; // played face down by default
+  card.faceUp = false;
   gameState.players[playerId].lines[lineIndex].push(card);
   renderGameBoard();
   renderHand();
-  console.log(`Played ${card.name} face down on line ${lineIndex} by Player ${playerId}`);
 }
 
 function flipCard(playerId, lineIndex, cardIndex) {
   const card = gameState.players[playerId].lines[lineIndex][cardIndex];
   card.faceUp = !card.faceUp;
-  console.log(`${card.name} flipped ${card.faceUp ? 'face up' : 'face down'}`);
   renderGameBoard();
 }
 
