@@ -97,6 +97,8 @@ function drawCard(playerId) {
     shuffle(player.deck);
   }
   const card = player.deck.pop();
+  // Cards drawn to hand default to faceUp: true
+  card.faceUp = true;
   player.hand.push(card);
   return card;
 }
@@ -285,4 +287,3 @@ function refreshHand(playerId) {
     if (!drawCard(playerId)) break;
   }
 }
-
