@@ -51,3 +51,18 @@ function renderGameBoard() {
     });
   });
 }
+function renderHand() {
+  const handDiv = document.getElementById('hand');
+  handDiv.innerHTML = '';
+  gameState.players[1].hand.forEach((card, idx) => {
+    const cardDiv = document.createElement('div');
+    cardDiv.classList.add('card');
+    cardDiv.textContent = card.name;
+    cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+    cardDiv.addEventListener('click', () => {
+      selectCardToPlay(idx);
+    });
+    handDiv.appendChild(cardDiv);
+  });
+}
+
