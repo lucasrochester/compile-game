@@ -47,23 +47,46 @@ body {
   padding: 4px 8px;
 }
 
-/* FULL text hide for face-down cards on board */
+/* Face-down cards: fully black background with large "2" centered */
 .line .card.face-down:not(.in-hand) {
-  color: transparent !important;
-  filter: brightness(0.4);
+  background: black !important;
+  color: white !important;
+  font-weight: bold;
+  font-size: 64px;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+}
+
+/* Hide all normal text on face-down cards */
+.line .card.face-down:not(.in-hand) > * {
+  display: none;
+}
+
+/* Show only the big 2 for face-down */
+.line .card.face-down:not(.in-hand)::after {
+  content: "2";
+  font-weight: bold;
+  font-size: 64px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   user-select: none;
 }
 
 /* Four equal vertical sections with good padding and wrapping */
 .card-section {
   flex: 1 1 0;
-  padding: 4px 0;
+  padding: 4px 6px;
   box-sizing: border-box;
   overflow-wrap: break-word;
   white-space: normal;
   display: flex;
   align-items: center;
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 /* Name always visible, with bottom border */
@@ -114,7 +137,7 @@ body {
   overflow-y: auto;
 }
 
-/* Covered cards hide only middle and bottom, NOT top */
+/* Covered cards: hide only middle and bottom sections (name and top remain visible) */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none;
@@ -149,12 +172,18 @@ body {
   overflow: visible;
 }
 
+/* Hand cards always show all text */
+#hand .card.face-down.in-hand {
+  background: #444 !important;
+  color: #eee !important;
+}
+
 #hand .card .card-section {
   flex: none;
   margin-bottom: 4px;
   overflow: visible;
   white-space: normal;
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 #hand .card:hover {
