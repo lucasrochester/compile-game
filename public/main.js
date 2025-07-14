@@ -26,7 +26,7 @@ const gameState = {
       discard: [],
     }
   },
-  currentPlayer: 1, // Fixed Player 1 for testing
+  currentPlayer: 1,
   controlComponent: false,
   mustCompileLine: null,
   compiledProtocols: {1: [], 2: []},
@@ -186,8 +186,6 @@ function checkCache() {
 function endPhase() {
   console.log('End phase');
   triggerEffects('End');
-  // Turn switching disabled for testing — always Player 1
-  // gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
   selectedCardIndex = null;
   selectedCardFaceUp = false;
   updateFlipToggleButton();
@@ -208,7 +206,7 @@ function compileProtocol(playerId, lineIndex) {
   gameState.players[2].lines[lineIndex] = [];
   gameState.compiledProtocols[playerId].push(gameState.players[playerId].protocols[lineIndex]);
 
-  gameState.mustCompileLine = null; // Clear compile requirement
+  gameState.mustCompileLine = null;
 
   alert(`Player ${playerId} compiled protocol ${gameState.players[playerId].protocols[lineIndex]}!`);
   updateButtonsState();
@@ -274,7 +272,7 @@ function renderGameBoard() {
           <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
-        // For testing: Always enable line clicks for Player 1
+        // Always enable line clicks for player 1 for testing:
         if (playerId === 1) {
           lineDiv.style.cursor = 'pointer';
           lineDiv.onclick = () => {
@@ -363,11 +361,9 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand[handIndex];
   console.log('Card to play:', card.name);
   
-  const cardProtocol = card.name.split(' ')[0];
-  const lineProtocol = gameState.players[playerId].protocols[lineIndex];
-  console.log(`Card protocol: ${cardProtocol}, Line protocol: ${lineProtocol}`);
-
-  // Comment out this check to test any card on any line:
+  // For now, skip protocol matching — allow playing any card on any line:
+  // const cardProtocol = card.name.split(' ')[0];
+  // const lineProtocol = gameState.players[playerId].protocols[lineIndex];
   // if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
   //   alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
   //   return;
@@ -407,27 +403,5 @@ function updateRefreshButton() {
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
 }
-
-// Minimal test: override line click handlers on Player 1 lines to just log clicks
-document.addEventListener('DOMContentLoaded', () => {
-  const player1Lines = document.querySelectorAll('#player1 .line');
-  player1Lines.forEach((line, idx) => {
-    line.onclick = () => {
-      console.log(`TEST: Player 1 Line ${idx} clicked.`);
-      alert(`TEST: Player 1 Line ${idx} clicked.`);
-    };
-    line.style.cursor = 'pointer';
-  });
-
-  // Override hand card clicks to just log card info
-  const handDiv = document.getElementById('hand');
-  handDiv.querySelectorAll('.card').forEach((cardDiv, idx) => {
-    cardDiv.onclick = () => {
-      console.log(`TEST: Hand card ${idx} clicked.`);
-      alert(`TEST: Hand card ${idx} clicked.`);
-    };
-    cardDiv.style.cursor = 'pointer';
-  });
-});
 
 
