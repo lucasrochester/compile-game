@@ -112,5 +112,60 @@ function renderGameBoard() {
             renderHand();
           }
         };
+      } else {
+        lineDiv.style.cursor = 'default';
+        lineDiv.onclick = null;
+      }
+    });
+  });
+}
 
+function renderHand() {
+  const handDiv = document.getElementById('hand');
+  handDiv.innerHTML = '';
 
+  const hand = gameState.players[gameState.currentPlayer].hand;
+
+  if (!hand || hand.length === 0) {
+    handDiv.textContent = 'No cards in hand';
+    return;
+  }
+
+  hand.forEach((card, idx) => {
+    const cardDiv = document.createElement('div');
+    cardDiv.classList.add('card', 'in-hand');
+    cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
+    cardDiv.style.cursor = 'pointer';
+
+    cardDiv.innerHTML = `
+      <div class="card-section card-name">${card.name} (${card.value})</div>
+      <div class="card-section card-top">${card.topEffect || ''}</div>
+      <div class="card-section card-middle">${card.middleEffect || ''}</div>
+      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
+    `;
+
+    cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#444';
+
+    cardDiv.addEventListener('click', () => {
+      selectedCardIndex = idx;
+      renderHand();
+      // Removed alert popup for smoother UX
+    });
+
+    handDiv.appendChild(cardDiv);
+  });
+}
+
+function playCardOnLine(playerId, handIndex, lineIndex) {
+  const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  card.faceUp = false;
+  gameState.players[playerId].lines[lineIndex].push(card);
+  renderGameBoard();
+  renderHand();
+}
+
+function flipCard(playerId, lineIndex, cardIndex) {
+  const card = gameState.players[playerId].lines[lineIndex][cardIndex];
+  card.faceUp = !card.faceUp;
+  renderGameBoard();
+}
