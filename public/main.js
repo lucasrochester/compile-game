@@ -112,6 +112,7 @@ function refreshHand(playerId) {
 }
 
 function startTurn() {
+  console.log('Starting turn for player', gameState.currentPlayer);
   gameState.controlComponent = false;
   gameState.mustCompileLine = null;
   updateButtonsState();
@@ -119,11 +120,13 @@ function startTurn() {
 }
 
 function startPhase() {
+  console.log('Start phase');
   triggerEffects('Start');
   checkControl();
 }
 
 function checkControl() {
+  console.log('Check control phase');
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
   let controlCount = 0;
@@ -143,6 +146,7 @@ function lineTotalValue(playerId, lineIndex) {
 }
 
 function checkCompile() {
+  console.log('Check compile phase');
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
   gameState.mustCompileLine = null;
@@ -162,6 +166,7 @@ function checkCompile() {
 }
 
 function actionPhase() {
+  console.log('Action phase');
   if (gameState.mustCompileLine !== null) {
     alert("You must compile this turn. Use the Compile button.");
     updateButtonsState();
@@ -179,6 +184,7 @@ function checkCache() {
 }
 
 function endPhase() {
+  console.log('End phase');
   triggerEffects('End');
   // Turn switching disabled for testing — always Player 1
   // gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
@@ -195,11 +201,15 @@ function triggerEffects(phase) {
 }
 
 function compileProtocol(playerId, lineIndex) {
+  console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
   gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
   gameState.players[1].lines[lineIndex] = [];
   gameState.players[2].lines[lineIndex] = [];
   gameState.compiledProtocols[playerId].push(gameState.players[playerId].protocols[lineIndex]);
+
+  gameState.mustCompileLine = null; // Clear compile requirement
+
   alert(`Player ${playerId} compiled protocol ${gameState.players[playerId].protocols[lineIndex]}!`);
   updateButtonsState();
   renderGameBoard();
@@ -267,6 +277,7 @@ function renderGameBoard() {
         if (playerId === gameState.currentPlayer && gameState.mustCompileLine === null) {
           lineDiv.style.cursor = 'pointer';
           lineDiv.onclick = () => {
+            console.log(`Clicked line ${idx} to play card`);
             if (selectedCardIndex !== null) {
               playCardOnLine(playerId, selectedCardIndex, idx);
               selectedCardIndex = null;
@@ -326,6 +337,7 @@ function renderHand() {
     `;
 
     cardDiv.addEventListener('click', () => {
+      console.log(`Selected card index: ${idx}`);
       selectedCardIndex = idx;
       selectedCardFaceUp = card.faceUp;
       updateFlipToggleButton();
@@ -339,17 +351,21 @@ function renderHand() {
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
-  if (handIndex !== selectedCardIndex) return;
+  console.log(`Trying to play card from hand index ${handIndex} on line ${lineIndex}`);
+
+  if (handIndex !== selectedCardIndex) {
+    console.warn('Hand index does not match selectedCardIndex');
+    return;
+  }
 
   const card = gameState.players[playerId].hand[handIndex];
   const cardProtocol = card.name.split(' ')[0];
+  const lineProtocol = gameState.players[playerId].protocols[lineIndex];
+  console.log(`Card protocol: ${cardProtocol}, Line protocol: ${lineProtocol}`);
 
-  if (selectedCardFaceUp) {
-    const lineProtocol = gameState.players[playerId].protocols[lineIndex];
-    if (cardProtocol !== lineProtocol) {
-      alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
-      return;
-    }
+  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
+    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+    return;
   }
 
   gameState.players[playerId].hand.splice(handIndex, 1)[0];
