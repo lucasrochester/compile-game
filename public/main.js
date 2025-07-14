@@ -6,13 +6,22 @@ const protocolColors = {
   Psychic: 'purple',
   Speed: 'white',
   Gravity: 'pink',
-  // Add other protocols as needed...
+  Darkness: 'black',
+  // Add other protocols if needed
 };
 
 const gameState = {
   players: {
-    1: { lines: [[], [], []], hand: [] },
-    2: { lines: [[], [], []], hand: [] }
+    1: {
+      protocols: ['Life', 'Light', 'Psychic'],
+      lines: [[], [], []],
+      hand: [],
+    },
+    2: {
+      protocols: ['Speed', 'Gravity', 'Darkness'],
+      lines: [[], [], []],
+      hand: [],
+    }
   },
   currentPlayer: 1,
 };
@@ -71,7 +80,17 @@ function renderGameBoard() {
     const lines = playerDiv.querySelectorAll('.line');
 
     lines.forEach((lineDiv, idx) => {
-      lineDiv.innerHTML = '';
+      lineDiv.innerHTML = ''; // clear previous
+
+      // Render protocol name & color
+      const protocolNameDiv = document.createElement('div');
+      protocolNameDiv.classList.add('protocol-name');
+      const protocolName = gameState.players[playerId].protocols[idx];
+      const protocolColor = protocolColors[protocolName] || 'gray';
+      protocolNameDiv.textContent = protocolName;
+      protocolNameDiv.style.color = protocolColor;
+      lineDiv.appendChild(protocolNameDiv);
+
       const cards = gameState.players[playerId].lines[idx];
 
       cards.forEach((card, i) => {
@@ -149,7 +168,6 @@ function renderHand() {
     cardDiv.addEventListener('click', () => {
       selectedCardIndex = idx;
       renderHand();
-      // Removed alert popup for smoother UX
     });
 
     handDiv.appendChild(cardDiv);
@@ -157,8 +175,23 @@ function renderHand() {
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
-  const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  const card = gameState.players[playerId].hand[handIndex];
+
+  // Extract protocol from card name
+  const cardProtocol = card.name.split(' ')[0];
+
+  if (card.faceUp) {
+    const lineProtocol = gameState.players[playerId].protocols[lineIndex];
+    if (cardProtocol !== lineProtocol) {
+      alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+      return;
+    }
+  }
+
+  // Remove from hand and add to line face down by default
+  gameState.players[playerId].hand.splice(handIndex, 1)[0];
   card.faceUp = false;
+
   gameState.players[playerId].lines[lineIndex].push(card);
   renderGameBoard();
   renderHand();
