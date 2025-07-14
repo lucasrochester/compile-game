@@ -78,31 +78,35 @@ function renderGameBoard() {
       const cards = gameState.players[playerId].lines[idx];
 
       cards.forEach((card, i) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.classList.add('card');
-        if (!card.faceUp) cardDiv.classList.add('face-down');
+  const cardDiv = document.createElement('div');
+  cardDiv.classList.add('card');
+  if (!card.faceUp) cardDiv.classList.add('face-down');
+  if (i < cards.length - 1) cardDiv.classList.add('covered'); // covered if not top card
 
-        const topText = card.topEffect || '-';
-        const middleText = card.middleEffect || '-';
-        const bottomText = card.bottomEffect || '-';
+  const topText = card.topEffect || '-';
+  const middleText = card.middleEffect || '-';
+  const bottomText = card.bottomEffect || '-';
 
-        cardDiv.innerHTML = `
-          <div><strong>${card.name} (${card.value})</strong></div>
-          <div><em>Top: ${topText}</em></div>
-          <div><em>Middle: ${middleText}</em></div>
-          <div><em>Bottom: ${bottomText}</em></div>
-        `;
+  cardDiv.innerHTML = `
+    <div class="card-section card-top">${card.name} (${card.value})</div>
+    <div class="card-section card-middle">${middleText}</div>
+    <div class="card-section card-bottom">${bottomText}</div>
+  `;
 
-        cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-        cardDiv.style.top = `${i * 40}px`;
-        cardDiv.style.zIndex = i + 1;
+  cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+  cardDiv.style.top = `${i * 40}px`;
+  cardDiv.style.zIndex = i + 1;
 
-        cardDiv.addEventListener('click', e => {
-          e.stopPropagation();
-          if (playerId === gameState.currentPlayer) {
-            flipCard(playerId, idx, i);
-          }
-        });
+  cardDiv.addEventListener('click', e => {
+    e.stopPropagation();
+    if (playerId === gameState.currentPlayer) {
+      flipCard(playerId, idx, i);
+    }
+  });
+
+  lineDiv.appendChild(cardDiv);
+});
+
 
         lineDiv.appendChild(cardDiv);
       });
