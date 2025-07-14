@@ -1,4 +1,5 @@
 let allCardsData = null;
+
 const protocolColors = {
   Life: 'green',
   Light: 'yellow',
@@ -94,9 +95,9 @@ function renderGameBoard() {
 
         cardDiv.innerHTML = `
           <div class="card-section card-name">${card.name} (${card.value})</div>
-          <div class="card-section card-top">${card.topEffect || '-'}</div>
-          <div class="card-section card-middle">${card.middleEffect || '-'}</div>
-          <div class="card-section card-bottom">${card.bottomEffect || '-'}</div>
+          <div class="card-section card-top">${card.topEffect || ''}</div>
+          <div class="card-section card-middle">${card.middleEffect || ''}</div>
+          <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
         cardDiv.addEventListener('click', e => {
@@ -146,9 +147,9 @@ function renderHand() {
 
     cardDiv.innerHTML = `
       <div class="card-section card-name">${card.name} (${card.value})</div>
-      <div class="card-section card-top">${card.topEffect || '-'}</div>
-      <div class="card-section card-middle">${card.middleEffect || '-'}</div>
-      <div class="card-section card-bottom">${card.bottomEffect || '-'}</div>
+      <div class="card-section card-top">${card.topEffect || ''}</div>
+      <div class="card-section card-middle">${card.middleEffect || ''}</div>
+      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
     `;
 
     cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#333';
@@ -178,3 +179,4 @@ function flipCard(playerId, lineIndex, cardIndex) {
   console.log(`${card.name} flipped ${card.faceUp ? 'face up' : 'face down'}`);
   renderGameBoard();
 }
+
