@@ -79,5 +79,10 @@ function selectCardToPlay(idx) {
   selectedCardIndex = idx;
   alert(`Selected card: ${gameState.players[1].hand[idx].name}. Now click a line to play it.`);
 }
+function playCardOnLine(playerId, handIndex, lineIndex) {
+  const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  card.faceUp = false;  // playing face down by default
+  gameState.players[playerId].lines[lineIndex].push(card);
+}
 
 
