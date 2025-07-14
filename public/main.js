@@ -1,42 +1,44 @@
-// Example game state
+// === Game State ===
 const gameState = {
   players: {
     1: { lines: [[], [], []], hand: [] },
     2: { lines: [[], [], []], hand: [] },
-  }
+  },
+  currentPlayer: 1,
 };
 
+let selectedCardIndex = null;
+
+// === Load Cards and Initialize ===
 fetch('../data/cards.json')
   .then(res => res.json())
   .then(data => {
-    // For demo: assign some cards to each line for each player
     const lifeCards = data.protocols.Life.cards;
     const lightCards = data.protocols.Light.cards;
-    const psychicCards = data.protocols.Psychic.cards;
 
-    // Player 1 line 0 gets Life 1 face up, Life 2 face down
-    gameState.players[1].lines[0].push({...lifeCards[1], faceUp: true});
-    gameState.players[1].lines[0].push({...lifeCards[2], faceUp: false});
+    // Setup initial board cards
+    gameState.players[1].lines[0].push({ ...lifeCards[1], faceUp: true, protocolColor: 'green' });
+    gameState.players[1].lines[1].push({ ...lightCards[3], faceUp: true, protocolColor: 'yellow' });
 
-    // Player 1 line 1 gets Light 3 face up
-    gameState.players[1].lines[1].push({...lightCards[3], faceUp: true});
-
-    // Player 2 line 0 gets Psychic 0 face down, Psychic 3 face up
-    gameState.players[2].lines[0].push({...psychicCards[0], faceUp: false});
-    gameState.players[2].lines[0].push({...psychicCards[3], faceUp: true});
+    // Setup initial hand
+    gameState.players[1].hand.push({ ...lifeCards[2], protocolColor: 'green' });
+    gameState.players[1].hand.push({ ...lightCards[4], protocolColor: 'yellow' });
 
     renderGameBoard();
+    renderHand();
   });
 
+// === Render the Game Board ===
 function renderGameBoard() {
   ['player1', 'player2'].forEach(pidStr => {
-    const playerId = parseInt(pidStr.replace('player',''));
+    const playerId = parseInt(pidStr.replace('player', ''));
     const playerDiv = document.getElementById(pidStr);
     const lines = playerDiv.querySelectorAll('.line');
 
     lines.forEach((lineDiv, idx) => {
       lineDiv.innerHTML = ''; // Clear old cards
       const cards = gameState.players[playerId].lines[idx];
+
       cards.forEach(card => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
@@ -48,41 +50,50 @@ function renderGameBoard() {
         });
         lineDiv.appendChild(cardDiv);
       });
-      lineDiv.addEventListener('click', () => {
-        if (selectedCardIndex !== null) {
-          playCardOnLine(1, selectedCardIndex, idx);
-          selectedCardIndex = null;
-          renderGameBoard();
-          renderHand();
+
+      // Add click handler to line for playing a card (only current player lines)
+      if (playerId === gameState.currentPlayer) {
+        lineDiv.style.cursor = 'pointer';
+        lineDiv.onclick = () => {
+          if (selectedCardIndex !== null) {
+            playCardOnLine(playerId, selectedCardIndex, idx);
+            selectedCardIndex = null;
+            renderGameBoard();
+            renderHand();
+          }
+        };
+      } else {
+        lineDiv.style.cursor = 'default';
+        lineDiv.onclick = null;
       }
     });
   });
-  });
 }
+
+// === Render Player's Hand ===
 function renderHand() {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
-  gameState.players[1].hand.forEach((card, idx) => {
+  gameState.players[gameState.currentPlayer].hand.forEach((card, idx) => {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('card');
     cardDiv.textContent = card.name;
     cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+    cardDiv.style.cursor = 'pointer';
+    cardDiv.style.background = (idx === selectedCardIndex) ? '#555' : '#333';
     cardDiv.addEventListener('click', () => {
-      selectCardToPlay(idx);
+      selectedCardIndex = idx;
+      renderHand();
+      alert(`Selected card: ${card.name}. Now click a line to play it.`);
     });
     handDiv.appendChild(cardDiv);
   });
 }
-let selectedCardIndex = null;
 
-function selectCardToPlay(idx) {
-  selectedCardIndex = idx;
-  alert(`Selected card: ${gameState.players[1].hand[idx].name}. Now click a line to play it.`);
-}
+// === Play Card Function ===
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false;  // playing face down by default
+  card.faceUp = false; // Play face down by default
   gameState.players[playerId].lines[lineIndex].push(card);
+  console.log(`${card.name} played face down on line ${lineIndex} by Player ${playerId}`);
 }
-
-
