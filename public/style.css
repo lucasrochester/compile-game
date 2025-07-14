@@ -43,6 +43,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: top 0.3s ease;
 }
 
 .line .card.face-down {
@@ -85,12 +86,30 @@ body {
 #hand-container {
   border: 1px solid #555;
   padding: 10px;
+  margin-top: 20px;
 }
 
 #hand {
   display: flex;
   gap: 10px;
 }
+
+#hand .card {
+  width: 100px;
+  cursor: pointer;
+  padding: 10px;
+  background: #444;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.7);
+  text-align: center;
+  user-select: none;
+  color: #eee;
+}
+
+#hand .card:hover {
+  background: #666;
+}
+
 
 #hand .card {
   width: 100px;
