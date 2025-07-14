@@ -35,14 +35,16 @@ function renderGameBoard() {
     lines.forEach((lineDiv, idx) => {
       lineDiv.innerHTML = '';
       const cards = gameState.players[playerId].lines[idx];
-      cards.forEach((card) => {
+      cards.forEach((card, i) => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
         if (!card.faceUp) cardDiv.classList.add('face-down');
-        cardDiv.textContent = card.name + (card.faceUp ? ` (${card.points})` : '');
+        cardDiv.textContent = card.faceUp ? `${card.name} (${card.points})` : 'Face Down';
         cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+        cardDiv.style.zIndex = i;  // make sure top cards are on top visually
         lineDiv.appendChild(cardDiv);
       });
+
 
       // Only player 1 can play cards on their lines for now
       if (playerId === 1) {
