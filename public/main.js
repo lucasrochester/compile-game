@@ -45,23 +45,44 @@ function findCard(protocol, value) {
 }
 
 function initializeGame() {
+  // Clear hands and lines
   gameState.players[1].hand = [];
   gameState.players[1].lines = [[], [], []];
+  gameState.players[2].hand = [];
   gameState.players[2].lines = [[], [], []];
 
-  // Example initial cards
-  const life1 = findCard('Life', 1);
-  const light4 = findCard('Light', 4);
-  if (life1) gameState.players[1].hand.push({...life1, faceUp: true});
-  if (light4) gameState.players[1].hand.push({...light4, faceUp: true});
+  // Add example cards to player 1 hand
+  const exampleCards = [
+    findCard('Life', 1),
+    findCard('Light', 4),
+    findCard('Psychic', 2),
+    findCard('Speed', 3),
+    findCard('Gravity', 0)
+  ].filter(Boolean);
 
-  const psychic2 = findCard('Psychic', 2);
-  if (psychic2) gameState.players[1].lines[0].push({...psychic2, faceUp: true});
+  exampleCards.forEach(card => {
+    gameState.players[1].hand.push({ ...card, faceUp: true });
+  });
 
-  const light4b = findCard('Light', 4);
-  const life1b = findCard('Life', 1);
-  if (light4b) gameState.players[2].lines[0].push({...light4b, faceUp: true});
-  if (life1b) gameState.players[2].lines[1].push({...life1b, faceUp: true});
+  // Add example cards on field for player 1
+  const fieldCardsP1 = [
+    findCard('Life', 2),
+    findCard('Light', 1),
+  ].filter(Boolean);
+
+  fieldCardsP1.forEach((card, i) => {
+    gameState.players[1].lines[0].push({ ...card, faceUp: true });
+  });
+
+  // Add example cards on field for player 2
+  const fieldCardsP2 = [
+    findCard('Psychic', 3),
+    findCard('Speed', 1),
+  ].filter(Boolean);
+
+  fieldCardsP2.forEach((card, i) => {
+    gameState.players[2].lines[1].push({ ...card, faceUp: true });
+  });
 
   renderGameBoard();
   renderHand();
@@ -87,7 +108,6 @@ function renderGameBoard() {
         cardDiv.style.top = `${i * 40}px`;
         cardDiv.style.zIndex = i + 1;
 
-        // When face down, the CSS shows a big "2" and hides text; otherwise show all sections.
         cardDiv.innerHTML = `
           <div class="card-section card-name">${card.name} (${card.value})</div>
           <div class="card-section card-top">${card.topEffect || '-'}</div>
@@ -136,7 +156,7 @@ function renderHand() {
 
   hand.forEach((card, idx) => {
     const cardDiv = document.createElement('div');
-    cardDiv.classList.add('card', 'in-hand'); // in-hand disables face-down text hiding
+    cardDiv.classList.add('card', 'in-hand'); // 'in-hand' disables face-down text hiding
     cardDiv.style.borderColor = card.protocolColor || 'gray';
     cardDiv.style.cursor = 'pointer';
 
@@ -161,12 +181,18 @@ function renderHand() {
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false; // play face down by default
+  card.faceUp = false; // played face down by default
   gameState.players[playerId].lines[lineIndex].push(card);
+  renderGameBoard();
+  renderHand();
   console.log(`Played ${card.name} face down on line ${lineIndex} by Player ${playerId}`);
 }
 
 function flipCard(playerId, lineIndex, cardIndex) {
   const card = gameState.players[playerId].lines[lineIndex][cardIndex];
- 
+  card.faceUp = !card.faceUp;
+  console.log(`${card.name} flipped ${card.faceUp ? 'face up' : 'face down'}`);
+  renderGameBoard();
+}
+
 
