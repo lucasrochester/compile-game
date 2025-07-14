@@ -26,7 +26,7 @@ const gameState = {
       discard: [],
     }
   },
-  currentPlayer: 1, // Fixed to Player 1 for testing
+  currentPlayer: 1, // Fixed Player 1 for testing
   controlComponent: false,
   mustCompileLine: null,
   compiledProtocols: {1: [], 2: []},
@@ -274,10 +274,11 @@ function renderGameBoard() {
           <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
-        if (playerId === gameState.currentPlayer && gameState.mustCompileLine === null) {
+        // For testing: Always enable line clicks for Player 1
+        if (playerId === 1) {
           lineDiv.style.cursor = 'pointer';
           lineDiv.onclick = () => {
-            console.log(`Clicked line ${idx} to play card`);
+            console.log(`Clicked line ${idx} for player ${playerId}`);
             if (selectedCardIndex !== null) {
               playCardOnLine(playerId, selectedCardIndex, idx);
               selectedCardIndex = null;
@@ -286,6 +287,8 @@ function renderGameBoard() {
               renderGameBoard();
               renderHand();
               updateButtonsState();
+            } else {
+              console.log("No card selected to play");
             }
           };
         } else {
@@ -351,22 +354,24 @@ function renderHand() {
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
-  console.log(`Trying to play card from hand index ${handIndex} on line ${lineIndex}`);
-
+  console.log('Attempting to play card:', { playerId, handIndex, lineIndex, selectedCardIndex });
   if (handIndex !== selectedCardIndex) {
     console.warn('Hand index does not match selectedCardIndex');
     return;
   }
 
   const card = gameState.players[playerId].hand[handIndex];
+  console.log('Card to play:', card.name);
+  
   const cardProtocol = card.name.split(' ')[0];
   const lineProtocol = gameState.players[playerId].protocols[lineIndex];
   console.log(`Card protocol: ${cardProtocol}, Line protocol: ${lineProtocol}`);
 
-  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
-    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
-    return;
-  }
+  // Comment out this check to test any card on any line:
+  // if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
+  //   alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+  //   return;
+  // }
 
   gameState.players[playerId].hand.splice(handIndex, 1)[0];
   card.faceUp = selectedCardFaceUp;
