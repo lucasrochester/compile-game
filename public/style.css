@@ -1,0 +1,30 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #222;
+  color: #eee;
+  padding: 20px;
+}
+#card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.card {
+  background: #333;
+  border-radius: 8px;
+  width: 160px;
+  padding: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.7);
+}
+.card .name {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+.card .points {
+  font-size: 0.9em;
+  margin-bottom: 8px;
+}
+.card .effects {
+  font-size: 0.85em;
+  white-space: pre-wrap;
+}
