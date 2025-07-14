@@ -192,7 +192,6 @@ function checkCompile() {
   if (gameState.mustCompileLine !== null) {
     alert(`You must compile the protocol on line ${gameState.mustCompileLine + 1} this turn.`);
   }
-  actionPhase();
 }
 
 function actionPhase() {
@@ -287,7 +286,10 @@ function renderGameBoard() {
       cards.forEach((card, i) => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
+
         if (!card.faceUp) cardDiv.classList.add('face-down');
+
+        // Covered means not the top card in the stack
         if (i < cards.length - 1) cardDiv.classList.add('covered');
 
         cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
@@ -295,17 +297,24 @@ function renderGameBoard() {
         cardDiv.style.zIndex = i + 1;
         cardDiv.style.left = '0';
 
-        cardDiv.innerHTML = `
-          <div class="card-section card-name">${card.name} (${card.value})</div>
-          <div class="card-section card-top">${card.topEffect || ''}</div>
-          <div class="card-section card-middle">${card.middleEffect || ''}</div>
-          <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
-        `;
-
-        lineDiv.style.cursor = playerId === 1 ? 'pointer' : 'default';
+        if (cardDiv.classList.contains('covered') && !card.faceUp) {
+          // Covered AND face-down: show just the card back (no top effect)
+          // Leave innerHTML empty; CSS face-down styles will show the "2"
+          cardDiv.innerHTML = '';
+        } else {
+          // Otherwise, show all card sections as normal
+          cardDiv.innerHTML = `
+            <div class="card-section card-name">${card.name} (${card.value})</div>
+            <div class="card-section card-top">${card.topEffect || ''}</div>
+            <div class="card-section card-middle">${card.middleEffect || ''}</div>
+            <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
+          `;
+        }
 
         lineDiv.appendChild(cardDiv);
       });
+
+      lineDiv.style.cursor = playerId === 1 ? 'pointer' : 'default';
     });
   });
 }
@@ -406,5 +415,4 @@ function updateRefreshButton() {
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
 }
-
 
