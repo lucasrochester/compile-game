@@ -27,6 +27,7 @@ const gameState = {
 };
 
 let selectedCardIndex = null;
+let selectedCardFaceUp = false; // track flip state of selected card in hand
 
 fetch('/data/cards.json')
   .then(res => res.json())
@@ -71,6 +72,7 @@ function initializeGame() {
 
   renderGameBoard();
   renderHand();
+  setupFlipToggle();
 }
 
 function renderGameBoard() {
@@ -111,12 +113,7 @@ function renderGameBoard() {
           <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
-        cardDiv.addEventListener('click', e => {
-          e.stopPropagation();
-          if (playerId === gameState.currentPlayer) {
-            flipCard(playerId, idx, i);
-          }
-        });
+        // *** NO flipping cards on board anymore! ***
 
         lineDiv.appendChild(cardDiv);
       });
@@ -127,6 +124,8 @@ function renderGameBoard() {
           if (selectedCardIndex !== null) {
             playCardOnLine(playerId, selectedCardIndex, idx);
             selectedCardIndex = null;
+            selectedCardFaceUp = false;
+            updateFlipToggleButton();
             renderGameBoard();
             renderHand();
           }
@@ -153,8 +152,20 @@ function renderHand() {
   hand.forEach((card, idx) => {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('card', 'in-hand');
-    cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
+
+    const isSelected = idx === selectedCardIndex;
+    const faceUpToShow = isSelected ? selectedCardFaceUp : card.faceUp;
+
+    cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
     cardDiv.style.cursor = 'pointer';
+
+    if (!faceUpToShow) {
+      cardDiv.classList.add('face-down');
+    } else {
+      cardDiv.classList.remove('face-down');
+    }
+
+    cardDiv.style.background = isSelected ? '#555' : '#444';
 
     cardDiv.innerHTML = `
       <div class="card-section card-name">${card.name} (${card.value})</div>
@@ -163,10 +174,10 @@ function renderHand() {
       <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
     `;
 
-    cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#444';
-
     cardDiv.addEventListener('click', () => {
       selectedCardIndex = idx;
+      selectedCardFaceUp = card.faceUp; // default to card's faceUp on select
+      updateFlipToggleButton();
       renderHand();
     });
 
@@ -175,12 +186,14 @@ function renderHand() {
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
+  if (handIndex !== selectedCardIndex) return; // safety check
+
   const card = gameState.players[playerId].hand[handIndex];
 
   // Extract protocol from card name
   const cardProtocol = card.name.split(' ')[0];
 
-  if (card.faceUp) {
+  if (selectedCardFaceUp) {
     const lineProtocol = gameState.players[playerId].protocols[lineIndex];
     if (cardProtocol !== lineProtocol) {
       alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
@@ -188,17 +201,32 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
     }
   }
 
-  // Remove from hand and add to line face down by default
+  // Remove from hand and add to line with faceUp set by toggle
   gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false;
+  card.faceUp = selectedCardFaceUp;
 
   gameState.players[playerId].lines[lineIndex].push(card);
+
+  // Reset selection and toggle after playing
+  selectedCardIndex = null;
+  selectedCardFaceUp = false;
+  updateFlipToggleButton();
+
   renderGameBoard();
   renderHand();
 }
 
-function flipCard(playerId, lineIndex, cardIndex) {
-  const card = gameState.players[playerId].lines[lineIndex][cardIndex];
-  card.faceUp = !card.faceUp;
-  renderGameBoard();
+function updateFlipToggleButton() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
+}
+
+function setupFlipToggle() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.addEventListener('click', () => {
+    if (selectedCardIndex === null) return;
+    selectedCardFaceUp = !selectedCardFaceUp;
+    updateFlipToggleButton();
+    renderHand();
+  });
 }
