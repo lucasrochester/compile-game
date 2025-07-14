@@ -19,7 +19,7 @@ body {
 .line {
   position: relative;
   flex: 1;
-  min-height: 220px;
+  min-height: 280px; /* increased for taller stack */
   background: #111;
   border: 1px solid #444;
   border-radius: 8px;
@@ -45,6 +45,7 @@ body {
   transition: top 0.3s ease;
   overflow: visible;
   z-index: 1;
+  padding-bottom: 40px; /* space for top effect below */
 }
 
 /* Face-down cards: black background with big "2" */
@@ -75,6 +76,7 @@ body {
   user-select: none;
 }
 
+/* Card sections */
 .card-section {
   flex: 1 1 0;
   padding: 6px 8px;
@@ -98,53 +100,45 @@ body {
   position: relative;
 }
 
+/* Absolutely position the top effect so it always shows above other cards */
 .card-top {
-  font-style: italic;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: #333;
+  z-index: 10;
+  padding-left: 8px;
+  padding-right: 8px;
+  box-sizing: border-box;
   border-bottom: 1.5px solid #555;
+  font-style: italic;
   font-size: 12px;
   color: #ccc;
-  justify-content: flex-start;
-  flex: 1 1 26.7%;
-  padding-left: 4px;
-  padding-right: 4px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #666 transparent;
-  position: relative;
-  z-index: 5;
-  background: #333;
+  display: flex !important;
   box-shadow: 0 2px 4px rgba(0,0,0,0.5);
   margin-bottom: 4px;
 }
 
-.card-middle {
+/* Push middle and bottom down so they don’t overlap the absolute top */
+.card-middle, .card-bottom {
+  margin-top: 40px;
+  padding-left: 4px;
+  padding-right: 4px;
   font-style: italic;
+  font-size: 12px;
+  color: #ccc;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
   border-bottom: 1.5px solid #555;
-  font-size: 12px;
-  color: #ccc;
-  justify-content: flex-start;
-  flex: 1 1 26.7%;
-  padding-left: 4px;
-  padding-right: 4px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
 }
 
-.card-bottom {
-  font-style: italic;
-  font-size: 12px;
-  color: #ccc;
-  justify-content: flex-start;
-  flex: 1 1 26.7%;
-  padding-left: 4px;
-  padding-right: 4px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
-}
-
-/* COVERED cards hide only middle and bottom — keep top and name visible */
+/* Covered cards hide middle and bottom only */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none !important;
@@ -152,8 +146,11 @@ body {
 
 .card.covered .card-top {
   display: flex !important;
-  position: relative;
-  z-index: 5;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
 }
 
 /* Hand styling */
@@ -187,6 +184,7 @@ body {
   word-break: break-word;
 }
 
+/* Hand cards always show all text, with scroll on effect sections */
 #hand .card.face-down.in-hand {
   background: #444 !important;
   color: #eee !important;
@@ -218,4 +216,5 @@ body {
   background-color: #666;
   border-radius: 3px;
 }
+
 
