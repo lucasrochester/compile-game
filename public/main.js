@@ -7,7 +7,6 @@ const protocolColors = {
   Speed: 'white',
   Gravity: 'pink',
   Darkness: 'black',
-  // Add other protocols if needed
 };
 
 const gameState = {
@@ -69,7 +68,7 @@ function initializeGame() {
     player.protocols.forEach(protocol => {
       const protocolCards = allCardsData.protocols[protocol]?.cards || [];
       protocolCards.forEach(cardData => {
-        const card = { ...cardData, protocolColor: protocolColors[protocol], faceUp: false };
+        const card = {...cardData, protocolColor: protocolColors[protocol], faceUp: false};
         player.deck.push(card);
       });
     });
@@ -89,7 +88,6 @@ function initializeGame() {
   renderHand();
   setupFlipToggle();
   updateRefreshButton();
-  updateButtonsState();
 }
 
 function drawCard(playerId) {
@@ -100,7 +98,7 @@ function drawCard(playerId) {
     shuffle(player.deck);
   }
   const card = player.deck.pop();
-  card.faceUp = true;
+  card.faceUp = true; 
   player.hand.push(card);
   return card;
 }
@@ -127,7 +125,6 @@ function startPhase() {
 function checkControl() {
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
-
   let controlCount = 0;
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
@@ -136,7 +133,6 @@ function checkControl() {
   }
   gameState.controlComponent = controlCount >= 2;
   updateButtonsState();
-
   checkCompile();
 }
 
@@ -148,7 +144,7 @@ function lineTotalValue(playerId, lineIndex) {
 function checkCompile() {
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
-
+  gameState.mustCompileLine = null;
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
@@ -157,13 +153,10 @@ function checkCompile() {
       break;
     }
   }
-
   updateButtonsState();
-
   if (gameState.mustCompileLine !== null) {
     alert(`You must compile the protocol on line ${gameState.mustCompileLine + 1} this turn.`);
   }
-
   actionPhase();
 }
 
@@ -186,7 +179,6 @@ function checkCache() {
 
 function endPhase() {
   triggerEffects('End');
-
   gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
   selectedCardIndex = null;
   selectedCardFaceUp = false;
@@ -197,24 +189,19 @@ function endPhase() {
 }
 
 function triggerEffects(phase) {
-  // Implement card effect triggers for 'Start' and 'End' phases here
+  // Stub for effect processing
 }
 
 function compileProtocol(playerId, lineIndex) {
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
   gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
-
   gameState.players[1].lines[lineIndex] = [];
   gameState.players[2].lines[lineIndex] = [];
-
   gameState.compiledProtocols[playerId].push(gameState.players[playerId].protocols[lineIndex]);
-
   alert(`Player ${playerId} compiled protocol ${gameState.players[playerId].protocols[lineIndex]}!`);
-
   updateButtonsState();
   renderGameBoard();
   renderHand();
-
   checkCache();
   endPhase();
 }
@@ -291,10 +278,10 @@ function renderGameBoard() {
         lineDiv.appendChild(cardDiv);
       });
 
-      if (playerId === gameState.currentPlayer) {
+      if (playerId === gameState.currentPlayer && gameState.mustCompileLine === null) {
         lineDiv.style.cursor = 'pointer';
         lineDiv.onclick = () => {
-          if (selectedCardIndex !== null && gameState.mustCompileLine === null) {
+          if (selectedCardIndex !== null) {
             playCardOnLine(playerId, selectedCardIndex, idx);
             selectedCardIndex = null;
             selectedCardFaceUp = false;
@@ -329,4 +316,85 @@ function renderHand() {
     cardDiv.classList.add('card', 'in-hand');
 
     const isSelected = idx === selectedCardIndex;
-    const faceUpToShow
+    const faceUpToShow = isSelected ? selectedCardFaceUp : card.faceUp;
+
+    cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
+    cardDiv.style.cursor = 'pointer';
+
+    if (!faceUpToShow) {
+      cardDiv.classList.add('face-down');
+    } else {
+      cardDiv.classList.remove('face-down');
+    }
+
+    cardDiv.style.background = isSelected ? '#555' : '#444';
+
+    cardDiv.innerHTML = `
+      <div class="card-section card-name">${card.name} (${card.value})</div>
+      <div class="card-section card-top">${card.topEffect || ''}</div>
+      <div class="card-section card-middle">${card.middleEffect || ''}</div>
+      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
+    `;
+
+    cardDiv.addEventListener('click', () => {
+      selectedCardIndex = idx;
+      selectedCardFaceUp = card.faceUp;
+      updateFlipToggleButton();
+      renderHand();
+    });
+
+    handDiv.appendChild(cardDiv);
+  });
+
+  updateRefreshButton();
+}
+
+function playCardOnLine(playerId, handIndex, lineIndex) {
+  if (handIndex !== selectedCardIndex) return;
+
+  const card = gameState.players[playerId].hand[handIndex];
+  const cardProtocol = card.name.split(' ')[0];
+
+  if (selectedCardFaceUp) {
+    const lineProtocol = gameState.players[playerId].protocols[lineIndex];
+    if (cardProtocol !== lineProtocol) {
+      alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+      return;
+    }
+  }
+
+  gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  card.faceUp = selectedCardFaceUp;
+
+  gameState.players[playerId].lines[lineIndex].push(card);
+
+  selectedCardIndex = null;
+  selectedCardFaceUp = false;
+  updateFlipToggleButton();
+
+  renderGameBoard();
+  renderHand();
+  updateButtonsState();
+}
+
+function updateFlipToggleButton() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
+}
+
+function setupFlipToggle() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.addEventListener('click', () => {
+    if (selectedCardIndex === null) return;
+    selectedCardFaceUp = !selectedCardFaceUp;
+    updateFlipToggleButton();
+    renderHand();
+  });
+}
+
+function updateRefreshButton() {
+  const btn = document.getElementById('refresh-button');
+  const hand = gameState.players[gameState.currentPlayer].hand;
+  btn.disabled = hand.length >= 5;
+}
+
