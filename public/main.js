@@ -88,6 +88,7 @@ function initializeGame() {
   renderHand();
   setupFlipToggle();
   updateRefreshButton();
+  updateButtonsState();
 }
 
 function drawCard(playerId) {
@@ -208,25 +209,12 @@ function compileProtocol(playerId, lineIndex) {
 }
 
 function updateButtonsState() {
-  const playBtn = document.getElementById('play-card-button');
   const refreshBtn = document.getElementById('refresh-button');
   const compileBtn = document.getElementById('compile-button');
 
-  if (gameState.mustCompileLine !== null) {
-    playBtn.disabled = true;
-    refreshBtn.disabled = true;
-    compileBtn.disabled = false;
-  } else {
-    playBtn.disabled = selectedCardIndex === null;
-    refreshBtn.disabled = gameState.players[gameState.currentPlayer].hand.length >= 5;
-    compileBtn.disabled = true;
-  }
+  refreshBtn.disabled = gameState.players[gameState.currentPlayer].hand.length >= 5;
+  compileBtn.disabled = gameState.mustCompileLine === null;
 }
-
-document.getElementById('play-card-button').addEventListener('click', () => {
-  if (selectedCardIndex === null) return;
-  alert("Please click a line on the board to play the card.");
-});
 
 document.getElementById('refresh-button').addEventListener('click', () => {
   refreshHand(gameState.currentPlayer);
@@ -398,4 +386,5 @@ function updateRefreshButton() {
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
 }
+
 
