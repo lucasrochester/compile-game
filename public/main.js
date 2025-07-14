@@ -93,7 +93,15 @@ function renderHand() {
 // === Play Card Function ===
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  
+  // Ensure protocolColor is present - if missing, assign a default color or fetch from JSON
+  if (!card.protocolColor) {
+    // Example: Assign green as default or pull from your original card data
+    card.protocolColor = 'gray';
+  }
+
   card.faceUp = false; // Play face down by default
   gameState.players[playerId].lines[lineIndex].push(card);
   console.log(`${card.name} played face down on line ${lineIndex} by Player ${playerId}`);
 }
+
