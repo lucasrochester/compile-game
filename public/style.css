@@ -28,3 +28,45 @@ body {
   font-size: 0.85em;
   white-space: pre-wrap;
 }
+#game-board {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.player-area {
+  border: 1px solid #555;
+  padding: 10px;
+}
+
+.lines {
+  display: flex;
+  gap: 15px;
+}
+
+.line {
+  flex: 1;
+  min-height: 180px;
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.line .card {
+  margin-bottom: -120px; /* stack overlap */
+  cursor: pointer;
+  width: 120px;
+}
+
+#line .card.face-down {
+  filter: brightness(0.5);
+}
+
