@@ -83,7 +83,10 @@ function renderGameBoard() {
         if (!card.faceUp) cardDiv.classList.add('face-down');
         if (i < cards.length - 1) cardDiv.classList.add('covered'); // covered if not top card
 
-        // Important: on board, face-down cards should NOT show text => handled by CSS
+        // Provide a CSS variable for border color
+        cardDiv.style.borderColor = card.protocolColor || 'gray';
+        cardDiv.style.top = `${i * 40}px`;
+        cardDiv.style.zIndex = i + 1;
 
         cardDiv.innerHTML = `
           <div class="card-section card-name">${card.name} (${card.value})</div>
@@ -91,10 +94,6 @@ function renderGameBoard() {
           <div class="card-section card-middle">${card.middleEffect || '-'}</div>
           <div class="card-section card-bottom">${card.bottomEffect || '-'}</div>
         `;
-
-        cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-        cardDiv.style.top = `${i * 40}px`;
-        cardDiv.style.zIndex = i + 1;
 
         cardDiv.addEventListener('click', e => {
           e.stopPropagation();
@@ -137,21 +136,25 @@ function renderHand() {
 
   hand.forEach((card, idx) => {
     const cardDiv = document.createElement('div');
-    cardDiv.classList.add('card', 'in-hand');  // add 'in-hand' class to override face-down hiding
+    cardDiv.classList.add('card', 'in-hand');  // special class to avoid face-down hiding
+    cardDiv.style.borderColor = card.protocolColor || 'gray';
+    cardDiv.style.cursor = 'pointer';
+
     cardDiv.innerHTML = `
       <div class="card-section card-name">${card.name} (${card.value})</div>
       <div class="card-section card-top">${card.topEffect || '-'}</div>
       <div class="card-section card-middle">${card.middleEffect || '-'}</div>
       <div class="card-section card-bottom">${card.bottomEffect || '-'}</div>
     `;
-    cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-    cardDiv.style.cursor = 'pointer';
+
     cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#333';
+
     cardDiv.addEventListener('click', () => {
       selectedCardIndex = idx;
       renderHand();
       alert(`Selected card: ${card.name}. Now click a line to play it.`);
     });
+
     handDiv.appendChild(cardDiv);
   });
 }
@@ -177,3 +180,4 @@ function triggerMiddleEffect(card) {
   console.log(`Triggering middle effect for ${card.name}`);
   // TODO: Implement your middle effect logic here based on card.middleEffect
 }
+
