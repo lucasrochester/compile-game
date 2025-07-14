@@ -45,7 +45,6 @@ function findCard(protocol, value) {
 }
 
 function initializeGame() {
-  // Only initialize hand if empty (first load)
   if (gameState.players[1].hand.length === 0) {
     gameState.players[1].hand = [
       findCard('Life', 1),
@@ -56,11 +55,9 @@ function initializeGame() {
     ].filter(Boolean).map(card => ({ ...card, faceUp: true }));
   }
 
-  // Initialize lines fresh every time
   gameState.players[1].lines = [[], [], []];
   gameState.players[2].lines = [[], [], []];
 
-  // Example cards on the board
   const fieldCardsP1 = [findCard('Life', 2), findCard('Light', 1)].filter(Boolean);
   fieldCardsP1.forEach(card => {
     gameState.players[1].lines[0].push({ ...card, faceUp: true });
