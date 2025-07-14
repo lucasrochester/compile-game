@@ -1,53 +1,65 @@
 const gameState = {
   players: {
-    1: { lines: [[], [], []], hand: [] }
+    1: { lines: [[], [], []], hand: [] },
+    2: { lines: [[], [], []], hand: [] },
   },
   currentPlayer: 1,
 };
 
 let selectedCardIndex = null;
 
-// For demo: some dummy cards
+// Sample cards for demo purposes
 const demoCards = [
   { name: 'Life 1', points: 1, protocolColor: 'green', faceUp: true },
   { name: 'Light 3', points: 3, protocolColor: 'yellow', faceUp: true },
-  { name: 'Psychic 2', points: 2, protocolColor: 'purple', faceUp: true }
+  { name: 'Psychic 2', points: 2, protocolColor: 'purple', faceUp: true },
 ];
 
-// Assign initial cards to Player 1 hand and lines
-gameState.players[1].hand.push({...demoCards[0], faceUp: true});
-gameState.players[1].hand.push({...demoCards[1], faceUp: true});
-gameState.players[1].lines[0].push({...demoCards[2], faceUp: true});
+// Initialize game state with some cards for both players
+gameState.players[1].hand.push({ ...demoCards[0], faceUp: true });
+gameState.players[1].hand.push({ ...demoCards[1], faceUp: true });
+gameState.players[1].lines[0].push({ ...demoCards[2], faceUp: true });
+
+gameState.players[2].lines[0].push({ ...demoCards[1], faceUp: true });
+gameState.players[2].lines[1].push({ ...demoCards[0], faceUp: true });
 
 renderGameBoard();
 renderHand();
 
 function renderGameBoard() {
-  const playerDiv = document.getElementById('player1');
-  const lines = playerDiv.querySelectorAll('.line');
+  ['player1', 'player2'].forEach((pidStr) => {
+    const playerId = parseInt(pidStr.replace('player', ''));
+    const playerDiv = document.getElementById(pidStr);
+    const lines = playerDiv.querySelectorAll('.line');
 
-  lines.forEach((lineDiv, idx) => {
-    lineDiv.innerHTML = '';
-    const cards = gameState.players[1].lines[idx];
-    cards.forEach(card => {
-      const cardDiv = document.createElement('div');
-      cardDiv.classList.add('card');
-      if (!card.faceUp) cardDiv.classList.add('face-down');
-      cardDiv.textContent = card.name + (card.faceUp ? ` (${card.points})` : '');
-      cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-      lineDiv.appendChild(cardDiv);
-    });
+    lines.forEach((lineDiv, idx) => {
+      lineDiv.innerHTML = '';
+      const cards = gameState.players[playerId].lines[idx];
+      cards.forEach((card) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.classList.add('card');
+        if (!card.faceUp) cardDiv.classList.add('face-down');
+        cardDiv.textContent = card.name + (card.faceUp ? ` (${card.points})` : '');
+        cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+        lineDiv.appendChild(cardDiv);
+      });
 
-    // Allow clicking line to play selected card
-    lineDiv.style.cursor = 'pointer';
-    lineDiv.onclick = () => {
-      if (selectedCardIndex !== null) {
-        playCardOnLine(1, selectedCardIndex, idx);
-        selectedCardIndex = null;
-        renderGameBoard();
-        renderHand();
+      // Only player 1 can play cards on their lines for now
+      if (playerId === 1) {
+        lineDiv.style.cursor = 'pointer';
+        lineDiv.onclick = () => {
+          if (selectedCardIndex !== null) {
+            playCardOnLine(playerId, selectedCardIndex, idx);
+            selectedCardIndex = null;
+            renderGameBoard();
+            renderHand();
+          }
+        };
+      } else {
+        lineDiv.style.cursor = 'default';
+        lineDiv.onclick = null;
       }
-    };
+    });
   });
 }
 
@@ -60,7 +72,7 @@ function renderHand() {
     cardDiv.textContent = card.name;
     cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
     cardDiv.style.cursor = 'pointer';
-    cardDiv.style.background = (idx === selectedCardIndex) ? '#555' : '#333';
+    cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#333';
     cardDiv.addEventListener('click', () => {
       selectedCardIndex = idx;
       renderHand();
@@ -72,7 +84,7 @@ function renderHand() {
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false; // plays face down by default
+  card.faceUp = false; // play face down by default
   gameState.players[playerId].lines[lineIndex].push(card);
   console.log(`Played ${card.name} face down on line ${lineIndex} by Player ${playerId}`);
 }
