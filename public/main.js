@@ -48,7 +48,15 @@ function renderGameBoard() {
         });
         lineDiv.appendChild(cardDiv);
       });
+      lineDiv.addEventListener('click', () => {
+        if (selectedCardIndex !== null) {
+          playCardOnLine(1, selectedCardIndex, idx);
+          selectedCardIndex = null;
+          renderGameBoard();
+          renderHand();
+      }
     });
+  });
   });
 }
 function renderHand() {
@@ -65,4 +73,11 @@ function renderHand() {
     handDiv.appendChild(cardDiv);
   });
 }
+let selectedCardIndex = null;
+
+function selectCardToPlay(idx) {
+  selectedCardIndex = idx;
+  alert(`Selected card: ${gameState.players[1].hand[idx].name}. Now click a line to play it.`);
+}
+
 
