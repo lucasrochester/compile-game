@@ -78,35 +78,31 @@ function renderGameBoard() {
       const cards = gameState.players[playerId].lines[idx];
 
       cards.forEach((card, i) => {
-  const cardDiv = document.createElement('div');
-  cardDiv.classList.add('card');
-  if (!card.faceUp) cardDiv.classList.add('face-down');
-  if (i < cards.length - 1) cardDiv.classList.add('covered'); // covered if not top card
+        const cardDiv = document.createElement('div');
+        cardDiv.classList.add('card');
+        if (!card.faceUp) cardDiv.classList.add('face-down');
+        if (i < cards.length - 1) cardDiv.classList.add('covered'); // covered if not top card
 
-  const topText = card.topEffect || '-';
-  const middleText = card.middleEffect || '-';
-  const bottomText = card.bottomEffect || '-';
+        const topText = card.topEffect || '-';
+        const middleText = card.middleEffect || '-';
+        const bottomText = card.bottomEffect || '-';
 
-  cardDiv.innerHTML = `
-    <div class="card-section card-top">${card.name} (${card.value})</div>
-    <div class="card-section card-middle">${middleText}</div>
-    <div class="card-section card-bottom">${bottomText}</div>
-  `;
+        cardDiv.innerHTML = `
+          <div class="card-section card-top">${card.name} (${card.value})</div>
+          <div class="card-section card-middle">${middleText}</div>
+          <div class="card-section card-bottom">${bottomText}</div>
+        `;
 
-  cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-  cardDiv.style.top = `${i * 40}px`;
-  cardDiv.style.zIndex = i + 1;
+        cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+        cardDiv.style.top = `${i * 40}px`;
+        cardDiv.style.zIndex = i + 1;
 
-  cardDiv.addEventListener('click', e => {
-    e.stopPropagation();
-    if (playerId === gameState.currentPlayer) {
-      flipCard(playerId, idx, i);
-    }
-  });
-
-  lineDiv.appendChild(cardDiv);
-});
-
+        cardDiv.addEventListener('click', e => {
+          e.stopPropagation();
+          if (playerId === gameState.currentPlayer) {
+            flipCard(playerId, idx, i);
+          }
+        });
 
         lineDiv.appendChild(cardDiv);
       });
@@ -135,7 +131,7 @@ function renderHand() {
 
   const hand = gameState.players[gameState.currentPlayer].hand;
 
-  if (hand.length === 0) {
+  if (!hand || hand.length === 0) {
     handDiv.textContent = 'No cards in hand';
     return;
   }
