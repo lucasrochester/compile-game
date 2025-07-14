@@ -26,7 +26,7 @@ const gameState = {
       discard: [],
     }
   },
-  currentPlayer: 1,
+  currentPlayer: 1, // Fixed to Player 1 for testing
   controlComponent: false,
   mustCompileLine: null,
   compiledProtocols: {1: [], 2: []},
@@ -179,7 +179,8 @@ function checkCache() {
 
 function endPhase() {
   triggerEffects('End');
-  gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+  // Turn switching disabled for testing — always Player 1
+  // gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
   selectedCardIndex = null;
   selectedCardFaceUp = false;
   updateFlipToggleButton();
@@ -275,26 +276,26 @@ function renderGameBoard() {
           <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
         `;
 
+        if (playerId === gameState.currentPlayer && gameState.mustCompileLine === null) {
+          lineDiv.style.cursor = 'pointer';
+          lineDiv.onclick = () => {
+            if (selectedCardIndex !== null) {
+              playCardOnLine(playerId, selectedCardIndex, idx);
+              selectedCardIndex = null;
+              selectedCardFaceUp = false;
+              updateFlipToggleButton();
+              renderGameBoard();
+              renderHand();
+              updateButtonsState();
+            }
+          };
+        } else {
+          lineDiv.style.cursor = 'default';
+          lineDiv.onclick = null;
+        }
+
         lineDiv.appendChild(cardDiv);
       });
-
-      if (playerId === gameState.currentPlayer && gameState.mustCompileLine === null) {
-        lineDiv.style.cursor = 'pointer';
-        lineDiv.onclick = () => {
-          if (selectedCardIndex !== null) {
-            playCardOnLine(playerId, selectedCardIndex, idx);
-            selectedCardIndex = null;
-            selectedCardFaceUp = false;
-            updateFlipToggleButton();
-            renderGameBoard();
-            renderHand();
-            updateButtonsState();
-          }
-        };
-      } else {
-        lineDiv.style.cursor = 'default';
-        lineDiv.onclick = null;
-      }
     });
   });
 }
