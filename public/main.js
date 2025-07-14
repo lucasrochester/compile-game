@@ -1,4 +1,4 @@
-// === Game State ===
+// Game state
 const gameState = {
   players: {
     1: { lines: [[], [], []], hand: [] },
@@ -9,18 +9,18 @@ const gameState = {
 
 let selectedCardIndex = null;
 
-// === Load Cards and Initialize ===
+// Load cards and initialize
 fetch('../data/cards.json')
   .then(res => res.json())
   .then(data => {
     const lifeCards = data.protocols.Life.cards;
     const lightCards = data.protocols.Light.cards;
 
-    // Setup initial board cards
+    // Setup initial board cards for Player 1
     gameState.players[1].lines[0].push({ ...lifeCards[1], faceUp: true, protocolColor: 'green' });
     gameState.players[1].lines[1].push({ ...lightCards[3], faceUp: true, protocolColor: 'yellow' });
 
-    // Setup initial hand
+    // Setup Player 1's hand
     gameState.players[1].hand.push({ ...lifeCards[2], protocolColor: 'green' });
     gameState.players[1].hand.push({ ...lightCards[4], protocolColor: 'yellow' });
 
@@ -28,7 +28,7 @@ fetch('../data/cards.json')
     renderHand();
   });
 
-// === Render the Game Board ===
+// Render the board
 function renderGameBoard() {
   ['player1', 'player2'].forEach(pidStr => {
     const playerId = parseInt(pidStr.replace('player', ''));
@@ -36,22 +36,18 @@ function renderGameBoard() {
     const lines = playerDiv.querySelectorAll('.line');
 
     lines.forEach((lineDiv, idx) => {
-      lineDiv.innerHTML = ''; // Clear old cards
+      lineDiv.innerHTML = '';
       const cards = gameState.players[playerId].lines[idx];
-
       cards.forEach(card => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
         if (!card.faceUp) cardDiv.classList.add('face-down');
         cardDiv.textContent = card.name + (card.faceUp ? ` (${card.points})` : '');
         cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-        cardDiv.addEventListener('click', () => {
-          console.log(`Clicked ${card.name}, faceUp: ${card.faceUp}`);
-        });
         lineDiv.appendChild(cardDiv);
       });
 
-      // Add click handler to line for playing a card (only current player lines)
+      // Allow clicking line to play card only if current player and a card selected
       if (playerId === gameState.currentPlayer) {
         lineDiv.style.cursor = 'pointer';
         lineDiv.onclick = () => {
@@ -70,7 +66,7 @@ function renderGameBoard() {
   });
 }
 
-// === Render Player's Hand ===
+// Render player's hand
 function renderHand() {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
@@ -90,18 +86,10 @@ function renderHand() {
   });
 }
 
-// === Play Card Function ===
+// Function to play card on line
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  
-  // Ensure protocolColor is present - if missing, assign a default color or fetch from JSON
-  if (!card.protocolColor) {
-    // Example: Assign green as default or pull from your original card data
-    card.protocolColor = 'gray';
-  }
-
-  card.faceUp = false; // Play face down by default
+  card.faceUp = false;
   gameState.players[playerId].lines[lineIndex].push(card);
   console.log(`${card.name} played face down on line ${lineIndex} by Player ${playerId}`);
 }
-
