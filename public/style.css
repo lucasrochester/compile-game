@@ -41,53 +41,14 @@ body {
   display: flex;
   flex-direction: column;
   padding: 8px 8px 8px 8px;
-  border: 2px solid gray;
+  border: 2px solid gray; /* default border */
   transition: top 0.3s ease;
   overflow: hidden;
   z-index: 1;
   left: 0;
 }
 
-/* Equal height sections */
-.card-section {
-  flex: 1 1 0;
-  overflow-y: auto;
-  white-space: normal;
-  padding: 6px 6px 6px 6px;
-  line-height: 1.3;
-  border-bottom: 1.5px solid #555;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
-  margin-bottom: 8px;
-  box-sizing: border-box;
-}
-
-/* Remove margin on last section */
-.card-section:last-child {
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-.card-name {
-  font-weight: bold;
-  font-size: 14px;
-  flex: none;
-  margin-bottom: 10px;
-  border-bottom: 1.5px solid #555;
-  padding-bottom: 6px;
-}
-
-/* Hide middle and bottom if covered */
-.card.covered .card-middle,
-.card.covered .card-bottom {
-  display: none !important;
-}
-
-.card.covered .card-top {
-  display: block !important;
-}
-
-/* Face-down card styling */
+/* Remove protocol-colored border on face-down cards (field) */
 .line .card.face-down:not(.in-hand) {
   background: black !important;
   color: white !important;
@@ -99,6 +60,7 @@ body {
   user-select: none;
   padding: 0;
   display: flex;
+  border-color: black !important; /* black border for face-down */
 }
 
 .line .card.face-down:not(.in-hand) > * {
@@ -115,6 +77,46 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   user-select: none;
+}
+
+/* Equal height sections with smaller text for field cards */
+.line .card .card-section {
+  font-size: 11px;
+  line-height: 1.2;
+  flex: 1 1 0;
+  overflow-y: auto;
+  white-space: normal;
+  margin-bottom: 6px;
+  padding: 3px 4px 3px 4px;
+  border-bottom: 1.5px solid #555;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
+  box-sizing: border-box;
+}
+
+/* Remove margin and border on last section */
+.line .card .card-section:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.card-name {
+  font-weight: bold;
+  font-size: 12px; /* smaller to match hand cards */
+  flex: none;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid #555;
+}
+
+/* Hide middle and bottom if covered */
+.card.covered .card-middle,
+.card.covered .card-bottom {
+  display: none !important;
+}
+
+.card.covered .card-top {
+  display: block !important;
 }
 
 /* Hand container */
@@ -151,6 +153,13 @@ body {
   border: 2px solid gray; /* default border; overridden in JS */
 }
 
+/* Remove protocol-colored border on face-down cards (hand) */
+#hand .card.face-down.in-hand {
+  background: #444 !important;
+  color: #eee !important;
+  border-color: black !important; /* black border for face-down */
+}
+
 /* Smaller text in hand card sections */
 #hand .card .card-section {
   font-size: 11px;
@@ -179,12 +188,6 @@ body {
   padding-bottom: 4px;
 }
 
-/* Face-down hand cards */
-#hand .card.face-down.in-hand {
-  background: #444 !important;
-  color: #eee !important;
-}
-
 #hand .card:hover {
   background: #666;
 }
@@ -202,3 +205,4 @@ body {
   background-color: #666;
   border-radius: 3px;
 }
+
