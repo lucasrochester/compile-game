@@ -5,16 +5,10 @@ body {
   padding: 20px;
 }
 
-#game-board {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  margin-bottom: 40px;
-}
-
 .player-area {
   border: 1px solid #555;
   padding: 10px;
+  margin-bottom: 20px;
 }
 
 .lines {
@@ -38,7 +32,7 @@ body {
 }
 
 .line .card {
-  margin-bottom: -120px; /* stacked overlap */
+  margin-bottom: -120px;
   cursor: pointer;
   width: 120px;
   padding: 8px;
