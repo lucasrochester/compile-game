@@ -89,7 +89,7 @@ function renderGameBoard() {
         if (i < cards.length - 1) cardDiv.classList.add('covered');
 
         cardDiv.style.borderColor = card.protocolColor || 'gray';
-        cardDiv.style.top = `${i * 40}px`;
+        cardDiv.style.top = `${i * 80}px`; // increased spacing for top effect visibility
         cardDiv.style.zIndex = i + 1;
 
         cardDiv.innerHTML = `
@@ -178,4 +178,3 @@ function flipCard(playerId, lineIndex, cardIndex) {
   console.log(`${card.name} flipped ${card.faceUp ? 'face up' : 'face down'}`);
   renderGameBoard();
 }
-
