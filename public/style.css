@@ -1,3 +1,4 @@
+/* Basic styles same as before */
 body {
   font-family: Arial, sans-serif;
   background: #222;
@@ -24,10 +25,10 @@ body {
   border: 1px solid #444;
   border-radius: 8px;
   padding: 10px;
-  overflow-y: visible;
   white-space: nowrap;
 }
 
+/* Card base */
 .line .card {
   position: absolute;
   width: 120px;
@@ -41,10 +42,11 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  padding: 4px 8px;
   border: 2px solid gray;
   transition: top 0.3s ease;
-  padding: 4px 8px;
+  overflow: visible; /* CHANGE: was hidden, now visible so top can show outside */
+  z-index: 1; /* Base stacking */
 }
 
 /* Face-down cards: black background with big "2" */
@@ -77,6 +79,7 @@ body {
   user-select: none;
 }
 
+/* Card sections */
 .card-section {
   flex: 1 1 0;
   padding: 6px 8px;
@@ -88,29 +91,7 @@ body {
   line-height: 1.4;
 }
 
-/* Scrollable effect text sections */
-.card-top,
-.card-middle,
-.card-bottom {
-  overflow-y: auto;
-  max-height: 40px;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
-}
-
-.card-top::-webkit-scrollbar,
-.card-middle::-webkit-scrollbar,
-.card-bottom::-webkit-scrollbar {
-  width: 6px;
-}
-
-.card-top::-webkit-scrollbar-thumb,
-.card-middle::-webkit-scrollbar-thumb,
-.card-bottom::-webkit-scrollbar-thumb {
-  background-color: #666;
-  border-radius: 3px;
-}
-
+/* Name section */
 .card-name {
   font-weight: bold;
   border-bottom: 1.5px solid #555;
@@ -119,17 +100,71 @@ body {
   flex: 0 0 20%;
   padding-left: 4px;
   padding-right: 4px;
+  z-index: 3;
+  position: relative; /* So it stacks above cards below */
 }
 
-/* Covered cards hide only middle and bottom */
+/* Top effect section */
+/* MAKE THIS position relative and high z-index so it stays visible when covered */
+.card-top {
+  font-style: italic;
+  border-bottom: 1.5px solid #555;
+  font-size: 12px;
+  color: #ccc;
+  justify-content: flex-start;
+  flex: 1 1 26.7%;
+  padding-left: 4px;
+  padding-right: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
+  position: relative; /* Added */
+  z-index: 5; /* High so it’s above other cards */
+  background: #333; /* To cover any bleed from cards below */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Slight shadow for clarity */
+  margin-bottom: 4px; /* Separate visually from middle */
+}
+
+/* Middle effect */
+.card-middle {
+  font-style: italic;
+  border-bottom: 1.5px solid #555;
+  font-size: 12px;
+  color: #ccc;
+  justify-content: flex-start;
+  flex: 1 1 26.7%;
+  padding-left: 4px;
+  padding-right: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
+}
+
+/* Bottom effect */
+.card-bottom {
+  font-style: italic;
+  font-size: 12px;
+  color: #ccc;
+  justify-content: flex-start;
+  flex: 1 1 26.7%;
+  padding-left: 4px;
+  padding-right: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
+}
+
+/* Covered cards: hide middle and bottom */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none !important;
 }
 
-/* Ensure top effect text is always visible even when covered */
+/* Ensure top effect is visible on covered cards (should already be from z-index, but just in case) */
 .card.covered .card-top {
   display: flex !important;
+  position: relative;
+  z-index: 5;
 }
 
 /* Hand styles */
@@ -182,3 +217,4 @@ body {
 #hand .card:hover {
   background: #666;
 }
+
