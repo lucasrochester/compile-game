@@ -173,3 +173,4 @@ function triggerMiddleEffect(card) {
   console.log(`Triggering middle effect for ${card.name}`);
   // TODO: Implement your middle effect logic here based on card.middleEffect
 }
+
