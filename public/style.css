@@ -46,7 +46,13 @@ body {
   transition: top 0.3s ease;
 }
 
-/* Equal height sections, 3 sections in the card */
+/* Hide all text when face down on board */
+.line .card.face-down:not(.in-hand) {
+  color: transparent !important;
+  user-select: none;
+  filter: brightness(0.4);
+}
+
 .card-section {
   flex: 1 1 0;
   padding: 6px 8px;
@@ -58,12 +64,21 @@ body {
   align-items: center;
 }
 
-/* Border lines separating the sections */
-.card-top {
+.card-name {
   font-weight: bold;
   border-bottom: 1.5px solid #555;
   font-size: 14px;
   justify-content: flex-start;
+  flex: 0 0 20%;
+}
+
+.card-top {
+  font-style: italic;
+  border-bottom: 1.5px solid #555;
+  font-size: 12px;
+  color: #ccc;
+  justify-content: flex-start;
+  flex: 1 1 26.7%;
 }
 
 .card-middle {
@@ -72,6 +87,7 @@ body {
   font-size: 12px;
   color: #ccc;
   justify-content: flex-start;
+  flex: 1 1 26.7%;
 }
 
 .card-bottom {
@@ -79,19 +95,13 @@ body {
   font-size: 12px;
   color: #ccc;
   justify-content: flex-start;
+  flex: 1 1 26.7%;
 }
 
-/* When card is covered: only show top section */
+/* When card is covered: only show name and top */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none;
-}
-
-/* Face down cards: hide ALL text */
-.line .card.face-down {
-  color: transparent !important;
-  user-select: none;
-  filter: brightness(0.4);
 }
 
 /* Hand styling */
@@ -107,18 +117,28 @@ body {
 }
 
 #hand .card {
+  position: relative;
   width: 100px;
+  height: 140px;
   cursor: pointer;
-  padding: 10px;
+  padding: 6px 8px;
   background: #444;
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0,0,0,0.7);
-  text-align: center;
+  text-align: left;
   user-select: none;
   color: #eee;
+  display: flex;
+  flex-direction: column;
+}
+
+#hand .card .card-section {
+  flex: none;
+  margin-bottom: 4px;
+  overflow: visible;
+  white-space: normal;
 }
 
 #hand .card:hover {
   background: #666;
 }
-
