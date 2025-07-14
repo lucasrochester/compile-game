@@ -38,45 +38,47 @@ body {
   color: #eee;
   cursor: pointer;
   user-select: none;
-  padding: 6px 8px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border: 2px solid gray;
   transition: top 0.3s ease;
 }
 
-.line .card.face-down {
-  filter: brightness(0.4);
-  user-select: none;
-  color: transparent !important; /* Hide all text */
-}
-
+/* Equal height sections, 3 sections in the card */
 .card-section {
-  padding: 2px 0;
-  font-size: 12px;
-  line-height: 1.1;
-  overflow-wrap: break-word;
-  white-space: normal;
-}
-
-.card-top {
-  flex: 0 0 auto;
-  font-weight: bold;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  flex: 1 1 0;
+  padding: 6px 8px;
+  box-sizing: border-box;
   overflow: hidden;
-  border-bottom: 1px solid #555;
-  min-height: 18px;
+  text-overflow: ellipsis;
+  white-space: normal;
+  display: flex;
+  align-items: center;
 }
 
-.card-middle, .card-bottom {
-  flex: 1 1 auto;
+/* Border lines separating the sections */
+.card-top {
+  font-weight: bold;
+  border-bottom: 1.5px solid #555;
+  font-size: 14px;
+  justify-content: flex-start;
+}
+
+.card-middle {
   font-style: italic;
-  font-size: 11px;
+  border-bottom: 1.5px solid #555;
+  font-size: 12px;
   color: #ccc;
-  overflow-y: auto;
-  max-height: 45px; /* limit height, scroll if needed */
+  justify-content: flex-start;
+}
+
+.card-bottom {
+  font-style: italic;
+  font-size: 12px;
+  color: #ccc;
+  justify-content: flex-start;
 }
 
 /* When card is covered: only show top section */
@@ -85,6 +87,14 @@ body {
   display: none;
 }
 
+/* Face down cards: hide ALL text */
+.line .card.face-down {
+  color: transparent !important;
+  user-select: none;
+  filter: brightness(0.4);
+}
+
+/* Hand styling */
 #hand-container {
   border: 1px solid #555;
   padding: 10px;
@@ -111,3 +121,4 @@ body {
 #hand .card:hover {
   background: #666;
 }
+
