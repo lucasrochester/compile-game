@@ -179,6 +179,7 @@ function checkCompile() {
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
   gameState.mustCompileLine = null;
+
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
@@ -189,29 +190,55 @@ function checkCompile() {
   }
 
   if (gameState.mustCompileLine !== null) {
-    alert(`Automatically compiling protocol on line ${gameState.mustCompileLine + 1}`);
-    compileProtocol(playerId, gameState.mustCompileLine);
+    console.log(`Auto-compiling protocol on line ${gameState.mustCompileLine + 1}`);
+    setTimeout(() => {
+      compileProtocol(playerId, gameState.mustCompileLine);
+    }, 100);
   } else {
-    updateButtonsState();
+    actionPhase();
   }
 }
 
 function actionPhase() {
   console.log('Action phase');
   if (gameState.mustCompileLine !== null) {
-    alert("You must compile this turn. The compile will happen automatically.");
-    updateButtonsState();
+    // Should not happen because compile triggers automatically and ends turn
     return;
   }
   updateButtonsState();
+  // Here you allow player to play cards or refresh hand
 }
 
-function checkCache() {
-  const player = gameState.players[gameState.currentPlayer];
-  while (player.hand.length > 5) {
-    const discarded = player.hand.pop();
-    player.discard.push(discarded);
+function compileProtocol(playerId, lineIndex) {
+  console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
+
+  // Discard cards on both sides in the line
+  gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
+  gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
+  gameState.players[1].lines[lineIndex] = [];
+  gameState.players[2].lines[lineIndex] = [];
+
+  // Mark compiled protocol
+  const protocol = gameState.players[playerId].protocols[lineIndex];
+  if (!gameState.compiledProtocols[playerId].includes(protocol)) {
+    gameState.compiledProtocols[playerId].push(protocol);
   }
+
+  gameState.mustCompileLine = null;
+
+  alert(`Player ${playerId} compiled protocol ${protocol}!`);
+
+  updateButtonsState();
+  renderGameBoard();
+  renderHand();
+  checkCache();
+
+  if (gameState.compiledProtocols[playerId].length === 3) {
+    alert(`Player ${playerId} wins by compiling all protocols!`);
+    // TODO: Handle game end (disable input or reset game)
+  }
+
+  endPhase();
 }
 
 function endPhase() {
@@ -232,46 +259,8 @@ function triggerEffects(phase) {
   // Stub for effect processing
 }
 
-function compileProtocol(playerId, lineIndex) {
-  console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
-
-  // Discard all cards in that line for both players
-  gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
-  gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
-  gameState.players[1].lines[lineIndex] = [];
-  gameState.players[2].lines[lineIndex] = [];
-
-  // Mark protocol compiled for the player
-  const protocol = gameState.players[playerId].protocols[lineIndex];
-  if (!gameState.compiledProtocols[playerId].includes(protocol)) {
-    gameState.compiledProtocols[playerId].push(protocol);
-  }
-
-  gameState.mustCompileLine = null;
-
-  alert(`Player ${playerId} compiled protocol ${protocol}!`);
-
-  updateButtonsState();
-  renderGameBoard();
-  renderHand();
-  checkCache();
-
-  // Check win condition
-  if (gameState.compiledProtocols[playerId].length === 3) {
-    alert(`Player ${playerId} wins by compiling all protocols!`);
-    // TODO: Implement game end handling or restart here
-  }
-
-  endPhase();
-}
-
 function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
-  const compileBtn = document.getElementById('compile-button');
-
-  // Compile button is disabled; compile happens automatically
-  compileBtn.disabled = true;
-
   refreshBtn.disabled = gameState.players[gameState.currentPlayer].hand.length >= 5;
 }
 
@@ -279,10 +268,6 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   refreshHand(gameState.currentPlayer);
   renderHand();
   updateButtonsState();
-});
-
-document.getElementById('compile-button').addEventListener('click', () => {
-  // Disabled, compile automatic
 });
 
 function renderGameBoard() {
@@ -333,7 +318,6 @@ function renderGameBoard() {
         lineDiv.appendChild(cardDiv);
       });
 
-      // Change cursor only if protocol NOT compiled (player 1 can play cards)
       const protocol = gameState.players[playerId].protocols[idx];
       const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
       lineDiv.style.cursor = (playerId === 1 && !isCompiled) ? 'pointer' : 'default';
