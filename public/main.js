@@ -45,26 +45,22 @@ function findCard(protocol, value) {
 }
 
 function initializeGame() {
-  // Clear hands and lines
-  gameState.players[1].hand = [];
+  // Only initialize hand if empty (first load)
+  if (gameState.players[1].hand.length === 0) {
+    gameState.players[1].hand = [
+      findCard('Life', 1),
+      findCard('Light', 4),
+      findCard('Psychic', 2),
+      findCard('Speed', 3),
+      findCard('Gravity', 0),
+    ].filter(Boolean).map(card => ({ ...card, faceUp: true }));
+  }
+
+  // Initialize lines fresh every time
   gameState.players[1].lines = [[], [], []];
-  gameState.players[2].hand = [];
   gameState.players[2].lines = [[], [], []];
 
-  // Example cards in player 1 hand:
-  const exampleCards = [
-    findCard('Life', 1),
-    findCard('Light', 4),
-    findCard('Psychic', 2),
-    findCard('Speed', 3),
-    findCard('Gravity', 0)
-  ].filter(Boolean);
-
-  exampleCards.forEach(card => {
-    gameState.players[1].hand.push({ ...card, faceUp: true });
-  });
-
-  // Example cards on board:
+  // Example cards on the board
   const fieldCardsP1 = [findCard('Life', 2), findCard('Light', 1)].filter(Boolean);
   fieldCardsP1.forEach(card => {
     gameState.players[1].lines[0].push({ ...card, faceUp: true });
@@ -121,5 +117,68 @@ function renderGameBoard() {
         lineDiv.onclick = () => {
           if (selectedCardIndex !== null) {
             playCardOnLine(playerId, selectedCardIndex, idx);
+            selectedCardIndex = null;
+            renderGameBoard();
+            renderHand();
+          }
+        };
+      } else {
+        lineDiv.style.cursor = 'default';
+        lineDiv.onclick = null;
+      }
+    });
+  });
+}
 
+function renderHand() {
+  const handDiv = document.getElementById('hand');
+  handDiv.innerHTML = '';
+
+  const hand = gameState.players[gameState.currentPlayer].hand;
+
+  if (!hand || hand.length === 0) {
+    handDiv.textContent = 'No cards in hand';
+    return;
+  }
+
+  hand.forEach((card, idx) => {
+    const cardDiv = document.createElement('div');
+    cardDiv.classList.add('card', 'in-hand');
+    cardDiv.style.borderColor = card.protocolColor || 'gray';
+    cardDiv.style.cursor = 'pointer';
+
+    cardDiv.innerHTML = `
+      <div class="card-section card-name">${card.name} (${card.value})</div>
+      <div class="card-section card-top">${card.topEffect || '-'}</div>
+      <div class="card-section card-middle">${card.middleEffect || '-'}</div>
+      <div class="card-section card-bottom">${card.bottomEffect || '-'}</div>
+    `;
+
+    cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#333';
+
+    cardDiv.addEventListener('click', () => {
+      selectedCardIndex = idx;
+      renderHand();
+      alert(`Selected card: ${card.name}. Now click a line to play it.`);
+    });
+
+    handDiv.appendChild(cardDiv);
+  });
+}
+
+function playCardOnLine(playerId, handIndex, lineIndex) {
+  const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  card.faceUp = false; // played face down by default
+  gameState.players[playerId].lines[lineIndex].push(card);
+  renderGameBoard();
+  renderHand();
+  console.log(`Played ${card.name} face down on line ${lineIndex} by Player ${playerId}`);
+}
+
+function flipCard(playerId, lineIndex, cardIndex) {
+  const card = gameState.players[playerId].lines[lineIndex][cardIndex];
+  card.faceUp = !card.faceUp;
+  console.log(`${card.name} flipped ${card.faceUp ? 'face up' : 'face down'}`);
+  renderGameBoard();
+}
 
