@@ -28,7 +28,6 @@ body {
   white-space: nowrap;
 }
 
-
 .line .card {
   position: absolute;
   width: 120px;
@@ -50,14 +49,6 @@ body {
   font-style: italic;
   color: #aaa;
 }
-
-
-.line .card.face-down {
-  filter: brightness(0.4);
-  font-style: italic;
-  color: #aaa;
-}
-
 
 #hand-container {
   border: 1px solid #555;
