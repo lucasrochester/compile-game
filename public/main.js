@@ -1,73 +1,112 @@
-// ==== GAME STATE ====
+let allCardsData = null;
+const protocolColors = {
+  Life: 'green',
+  Light: 'yellow',
+  Psychic: 'purple',
+  Speed: 'white',
+  Gravity: 'pink',
+  Water: 'blue',
+  Darkness: 'black',
+  Love: 'lightpink',
+  Hate: 'red',
+  Death: 'gray',
+  Apathy: 'lightgray',
+  Metal: 'darkgray',
+  Plague: 'darkgreen',
+  Spirit: 'darkblue',
+  Fire: 'orange',
+};
+
 const gameState = {
   players: {
     1: { lines: [[], [], []], hand: [] },
-    2: { lines: [[], [], []], hand: [] },
+    2: { lines: [[], [], []], hand: [] }
   },
   currentPlayer: 1,
 };
 
 let selectedCardIndex = null;
 
-// ==== SAMPLE CARDS ====
-const demoCards = [
-  { name: 'Life 1', points: 1, protocolColor: 'green', faceUp: true },
-  { name: 'Light 3', points: 3, protocolColor: 'yellow', faceUp: true },
-  { name: 'Psychic 2', points: 2, protocolColor: 'purple', faceUp: true },
-];
+fetch('/data/cards.json')
+  .then(res => res.json())
+  .then(data => {
+    allCardsData = data;
+    initializeGame();
+  })
+  .catch(e => console.error('Failed to load cards.json', e));
 
-// Initialize player 1 hand and lines with demo cards
-gameState.players[1].hand.push({ ...demoCards[0], faceUp: true });
-gameState.players[1].hand.push({ ...demoCards[1], faceUp: true });
-gameState.players[1].lines[0].push({ ...demoCards[2], faceUp: true });
+function findCard(protocol, value) {
+  if (!allCardsData) return null;
+  const protocolData = allCardsData.protocols[protocol];
+  if (!protocolData) return null;
+  const card = protocolData.cards.find(c => c.value === value);
+  if (card) card.protocolColor = protocolColors[protocol];
+  return card;
+}
 
-// Player 2 lines for visual
-gameState.players[2].lines[0].push({ ...demoCards[1], faceUp: true });
-gameState.players[2].lines[1].push({ ...demoCards[0], faceUp: true });
+function initializeGame() {
+  gameState.players[1].hand = [];
+  gameState.players[1].lines = [[], [], []];
+  gameState.players[2].lines = [[], [], []];
 
-renderGameBoard();
-renderHand();
+  // Example initial cards
+  const life1 = findCard('Life', 1);
+  const light4 = findCard('Light', 4);
+  if (life1) gameState.players[1].hand.push({...life1, faceUp: true});
+  if (light4) gameState.players[1].hand.push({...light4, faceUp: true});
+
+  const psychic2 = findCard('Psychic', 2);
+  if (psychic2) gameState.players[1].lines[0].push({...psychic2, faceUp: true});
+
+  const light4b = findCard('Light', 4);
+  const life1b = findCard('Life', 1);
+  if (light4b) gameState.players[2].lines[0].push({...light4b, faceUp: true});
+  if (life1b) gameState.players[2].lines[1].push({...life1b, faceUp: true});
+
+  renderGameBoard();
+  renderHand();
+}
 
 function renderGameBoard() {
-  ['player1', 'player2'].forEach((pidStr) => {
+  ['player1', 'player2'].forEach(pidStr => {
     const playerId = parseInt(pidStr.replace('player', ''));
     const playerDiv = document.getElementById(pidStr);
     const lines = playerDiv.querySelectorAll('.line');
 
     lines.forEach((lineDiv, idx) => {
       lineDiv.innerHTML = '';
-
       const cards = gameState.players[playerId].lines[idx];
 
-     cards.forEach((card, i) => {
-  const cardDiv = document.createElement('div');
-  cardDiv.addEventListener('click', () => {
-  // Allow flipping cards only if they belong to the current player
-  if (playerId === gameState.currentPlayer) {
-    flipCard(playerId, idx, i);
-  }
-    cardDiv.innerHTML = `
-  <div><strong>${card.name} (${card.value})</strong></div>
-  <div><em>Top: ${card.topEffect || '-'}</em></div>
-  <div><em>Middle: ${card.middleEffect || '-'}</em></div>
-  <div><em>Bottom: ${card.bottomEffect || '-'}</em></div>
-`;
-cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+      cards.forEach((card, i) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.classList.add('card');
+        if (!card.faceUp) cardDiv.classList.add('face-down');
 
-});
+        const topText = card.topEffect || '-';
+        const middleText = card.middleEffect || '-';
+        const bottomText = card.bottomEffect || '-';
 
-  cardDiv.classList.add('card');
-  if (!card.faceUp) cardDiv.classList.add('face-down');
-  cardDiv.textContent = card.faceUp ? `${card.name} (${card.points})` : 'Face Down';
-  cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-  cardDiv.style.top = `${i * 40}px`;  // shift each card down by 40px from previous
-  cardDiv.style.zIndex = i + 1;       // make sure top cards are on top visually
-  lineDiv.appendChild(cardDiv);
-});
+        cardDiv.innerHTML = `
+          <div><strong>${card.name} (${card.value})</strong></div>
+          <div><em>Top: ${topText}</em></div>
+          <div><em>Middle: ${middleText}</em></div>
+          <div><em>Bottom: ${bottomText}</em></div>
+        `;
 
+        cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+        cardDiv.style.top = `${i * 40}px`;
+        cardDiv.style.zIndex = i + 1;
 
+        cardDiv.addEventListener('click', e => {
+          e.stopPropagation();
+          if (playerId === gameState.currentPlayer) {
+            flipCard(playerId, idx, i);
+          }
+        });
 
-      // Player 1 lines clickable only
+        lineDiv.appendChild(cardDiv);
+      });
+
       if (playerId === 1) {
         lineDiv.style.cursor = 'pointer';
         lineDiv.onclick = () => {
@@ -115,7 +154,7 @@ function renderHand() {
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false;
+  card.faceUp = false; // play face down by default
   gameState.players[playerId].lines[lineIndex].push(card);
   console.log(`Played ${card.name} face down on line ${lineIndex} by Player ${playerId}`);
 }
@@ -132,56 +171,5 @@ function flipCard(playerId, lineIndex, cardIndex) {
 
 function triggerMiddleEffect(card) {
   console.log(`Triggering middle effect for ${card.name}`);
-  // TODO: implement actual card middle effects here
+  // TODO: Implement your middle effect logic here based on card.middleEffect
 }
-
-let allCardsData = null;
-
-fetch('../data/cards.json')
-  .then(res => res.json())
-  .then(data => {
-    allCardsData = data;
-    initializeGame();
-  });
-
-function findCard(protocol, value) {
-  if (!allCardsData || !allCardsData.protocols[protocol]) return null;
-  return allCardsData.protocols[protocol].cards.find(c => c.value === value);
-}
-
-function initializeGame() {
-  const life3 = findCard('Life', 3);
-  const light4 = findCard('Light', 4);
-
-  gameState.players[1].hand.push({ ...life3, faceUp: true, protocolColor: 'green' });
-  gameState.players[1].lines[0].push({ ...light4, faceUp: true, protocolColor: 'yellow' });
-
-  renderGameBoard();
-  renderHand();
-}
-
-const protocolColors = {
-  Life: 'green',
-  Light: 'yellow',
-  Psychic: 'purple',
-  Speed: 'white',
-  Gravity: 'pink',
-  Water: 'blue',
-  Darkness: 'black',
-  Love: 'lightpink',
-  Hate: 'red',
-  Death: 'gray',
-  Apathy: 'lightgray',
-  Metal: 'darkgray',
-  Plague: 'darkgreen',
-  Spirit: 'darkblue',
-  Fire: 'orange',
-};
-
-function findCard(protocol, value) {
-  if (!allCardsData || !allCardsData.protocols[protocol]) return null;
-  const card = allCardsData.protocols[protocol].cards.find(c => c.value === value);
-  if (card) card.protocolColor = protocolColors[protocol];
-  return card;
-}
-
