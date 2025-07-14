@@ -18,36 +18,41 @@ body {
 
 .line {
   flex: 1;
-  min-height: 180px;
+  min-height: 220px; /* a bit taller so stacked cards don’t overlap too much */
   background: #111;
   border: 1px solid #444;
   border-radius: 8px;
-  padding: 5px;
+  padding: 10px;
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible; /* allow cards to overflow vertically */
   white-space: nowrap;
+  position: relative; /* so absolutely positioned cards can be inside */
 }
 
 .line .card {
-  margin-bottom: -120px;
-  cursor: pointer;
+  position: relative;
   width: 120px;
-  padding: 8px;
+  height: 170px; /* fixed height so stacking is consistent */
+  margin-bottom: -130px; /* overlap so cards peek out */
   background: #333;
-  border-radius: 6px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
   color: #eee;
-  text-align: center;
+  cursor: pointer;
   user-select: none;
+  padding: 10px;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .line .card.face-down {
-  filter: brightness(0.5);
+  filter: brightness(0.4);
   font-style: italic;
+  color: #aaa;
 }
+
 
 #hand-container {
   border: 1px solid #555;
