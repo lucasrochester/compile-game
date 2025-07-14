@@ -18,33 +18,35 @@ body {
 
 .line {
   flex: 1;
-  min-height: 220px; /* a bit taller so stacked cards don’t overlap too much */
+  min-height: 220px; /* enough height for cards */
   background: #111;
   border: 1px solid #444;
   border-radius: 8px;
   padding: 10px;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;      /* change from column-reverse to column */
   align-items: center;
-  overflow-y: visible; /* allow cards to overflow vertically */
+  overflow-y: visible;
   white-space: nowrap;
-  position: relative; /* so absolutely positioned cards can be inside */
+  position: relative;
 }
+
 
 .line .card {
   position: relative;
   width: 120px;
-  height: 170px; /* fixed height so stacking is consistent */
-  margin-bottom: -130px; /* overlap so cards peek out */
+  height: 170px;
+  margin-top: -130px; /* negative margin on top for upward overlap */
   background: #333;
   border-radius: 8px;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 0 8px rgba(0,0,0,0.7);
   color: #eee;
   cursor: pointer;
   user-select: none;
   padding: 10px;
   text-align: center;
   box-sizing: border-box;
+  z-index: auto; /* reset z-index */
 }
 
 .line .card.face-down {
