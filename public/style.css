@@ -45,10 +45,9 @@ body {
   transition: top 0.3s ease;
   overflow: visible;
   z-index: 1;
-  padding-bottom: 60px; /* increased for top effect */
+  padding-bottom: 60px;
 }
 
-/* Face-down cards: black background with big "2" */
 .line .card.face-down:not(.in-hand) {
   background: black !important;
   color: white !important;
@@ -99,7 +98,6 @@ body {
   position: relative;
 }
 
-/* Top effect absolutely positioned and larger for readability */
 .card-top {
   position: absolute;
   top: 0;
@@ -137,7 +135,6 @@ body {
   border-bottom: 1.5px solid #555;
 }
 
-/* Covered cards hide middle and bottom only */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none !important;
@@ -152,7 +149,6 @@ body {
   z-index: 10;
 }
 
-/* Hand styling */
 #hand-container {
   border: 1px solid #555;
   padding: 10px;
@@ -183,7 +179,6 @@ body {
   word-break: break-word;
 }
 
-/* Hand cards always show all text, with scroll on effect sections */
 #hand .card.face-down.in-hand {
   background: #444 !important;
   color: #eee !important;
@@ -215,3 +210,4 @@ body {
   background-color: #666;
   border-radius: 3px;
 }
+
