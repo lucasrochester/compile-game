@@ -40,10 +40,10 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 4px 8px;
+  padding: 8px 8px 12px 8px;
   border: 2px solid gray;
   transition: top 0.3s ease;
-  overflow: visible;
+  overflow: hidden;
   z-index: 1;
   padding-bottom: 60px;
 }
@@ -76,79 +76,45 @@ body {
 }
 
 .card-section {
-  flex: 1 1 0;
-  padding: 6px 8px;
-  box-sizing: border-box;
+  flex: none;
   overflow-wrap: break-word;
   white-space: normal;
-  display: flex;
-  align-items: flex-start;
-  line-height: 1.4;
+  padding: 2px 0;
+  line-height: 1.3;
 }
 
 .card-name {
   font-weight: bold;
-  border-bottom: 1.5px solid #555;
   font-size: 14px;
-  justify-content: flex-start;
-  flex: 0 0 20%;
-  padding-left: 4px;
-  padding-right: 4px;
-  z-index: 3;
-  position: relative;
-}
-
-.card-top {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: #333;
-  z-index: 10;
-  padding: 8px 12px;
-  box-sizing: border-box;
   border-bottom: 1.5px solid #555;
-  font-style: italic;
-  font-size: 13px;
-  color: #ccc;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
-  display: flex !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  margin-bottom: 4px;
-  line-height: 1.4;
-  white-space: normal;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
 }
 
-.card-middle, .card-bottom {
-  margin-top: 60px;
-  padding-left: 8px;
-  padding-right: 8px;
+.card-top, .card-middle, .card-bottom {
   font-style: italic;
   font-size: 12px;
   color: #ccc;
+  max-height: 36px;
   overflow-y: auto;
+  margin-bottom: 6px;
+  border-bottom: 1.5px solid #555;
+  padding-bottom: 4px;
   scrollbar-width: thin;
   scrollbar-color: #666 transparent;
-  border-bottom: 1.5px solid #555;
 }
 
+/* Hide middle and bottom if covered */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none !important;
 }
 
 .card.covered .card-top {
-  display: flex !important;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
+  display: block !important;
 }
 
+/* Hand container */
 #hand-container {
   border: 1px solid #555;
   padding: 10px;
@@ -163,10 +129,9 @@ body {
 #hand .card {
   position: relative;
   width: 100px;
-  height: auto;
   min-height: 140px;
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 8px 8px 12px 8px;
   background: #444;
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0,0,0,0.7);
@@ -175,7 +140,7 @@ body {
   color: #eee;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
   word-break: break-word;
 }
 
@@ -185,13 +150,15 @@ body {
 }
 
 #hand .card .card-section {
-  flex: none;
-  margin-bottom: 6px;
+  max-height: 36px;
   overflow-y: auto;
   white-space: normal;
   line-height: 1.3;
-  max-height: 40px;
-  overflow-wrap: break-word;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid #555;
+  scrollbar-width: thin;
+  scrollbar-color: #666 transparent;
 }
 
 #hand .card:hover {
