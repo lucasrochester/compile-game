@@ -41,6 +41,13 @@ function renderGameBoard() {
 
      cards.forEach((card, i) => {
   const cardDiv = document.createElement('div');
+  cardDiv.addEventListener('click', () => {
+  // Allow flipping cards only if they belong to the current player
+  if (playerId === gameState.currentPlayer) {
+    flipCard(playerId, idx, i);
+  }
+});
+
   cardDiv.classList.add('card');
   if (!card.faceUp) cardDiv.classList.add('face-down');
   cardDiv.textContent = card.faceUp ? `${card.name} (${card.points})` : 'Face Down';
@@ -103,4 +110,19 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   card.faceUp = false;
   gameState.players[playerId].lines[lineIndex].push(card);
   console.log(`Played ${card.name} face down on line ${lineIndex} by Player ${playerId}`);
+}
+
+function flipCard(playerId, lineIndex, cardIndex) {
+  const card = gameState.players[playerId].lines[lineIndex][cardIndex];
+  card.faceUp = !card.faceUp;
+  console.log(`${card.name} flipped ${card.faceUp ? 'face up' : 'face down'}`);
+  if (card.faceUp) {
+    triggerMiddleEffect(card);
+  }
+  renderGameBoard();
+}
+
+function triggerMiddleEffect(card) {
+  console.log(`Triggering middle effect for ${card.name}`);
+  // TODO: implement actual card middle effects here
 }
