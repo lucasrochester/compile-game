@@ -242,4 +242,47 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
 
   selectedCardIndex = null;
   selectedCardFaceUp = false;
-  updateFlipToggle
+  updateFlipToggleButton();
+
+  renderGameBoard();
+  renderHand();
+  updateRefreshButton();
+}
+
+function updateFlipToggleButton() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
+}
+
+function setupFlipToggle() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.addEventListener('click', () => {
+    if (selectedCardIndex === null) return;
+    selectedCardFaceUp = !selectedCardFaceUp;
+    updateFlipToggleButton();
+    renderHand();
+  });
+}
+
+function updateRefreshButton() {
+  const btn = document.getElementById('refresh-button');
+  const hand = gameState.players[gameState.currentPlayer].hand;
+  btn.disabled = hand.length >= 5;
+}
+
+document.getElementById('refresh-button').addEventListener('click', () => {
+  const playerId = gameState.currentPlayer;
+  const hand = gameState.players[playerId].hand;
+  if (hand.length >= 5) return;
+  refreshHand(playerId);
+  renderHand();
+  updateRefreshButton();
+});
+
+function refreshHand(playerId) {
+  const player = gameState.players[playerId];
+  while (player.hand.length < 5) {
+    if (!drawCard(playerId)) break;
+  }
+}
+
