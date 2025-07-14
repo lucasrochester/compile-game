@@ -4,30 +4,7 @@ body {
   color: #eee;
   padding: 20px;
 }
-#card-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.card {
-  background: #333;
-  border-radius: 8px;
-  width: 160px;
-  padding: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.7);
-}
-.card .name {
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-.card .points {
-  font-size: 0.9em;
-  margin-bottom: 8px;
-}
-.card .effects {
-  font-size: 0.85em;
-  white-space: pre-wrap;
-}
+
 #game-board {
   display: flex;
   flex-direction: column;
@@ -61,12 +38,44 @@ body {
 }
 
 .line .card {
-  margin-bottom: -120px; /* stack overlap */
+  margin-bottom: -120px; /* stacked overlap */
   cursor: pointer;
   width: 120px;
+  padding: 8px;
+  background: #333;
+  border-radius: 6px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+  color: #eee;
+  text-align: center;
+  user-select: none;
 }
 
-#line .card.face-down {
+.line .card.face-down {
   filter: brightness(0.5);
+  font-style: italic;
 }
 
+#hand-container {
+  border: 1px solid #555;
+  padding: 10px;
+}
+
+#hand {
+  display: flex;
+  gap: 10px;
+}
+
+#hand .card {
+  width: 100px;
+  cursor: pointer;
+  padding: 10px;
+  background: #444;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.7);
+  text-align: center;
+  user-select: none;
+}
+
+#hand .card:hover {
+  background: #666;
+}
