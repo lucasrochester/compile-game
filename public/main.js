@@ -16,11 +16,15 @@ const gameState = {
       protocols: ['Life', 'Light', 'Psychic'],
       lines: [[], [], []],
       hand: [],
+      deck: [],
+      discard: [],
     },
     2: {
       protocols: ['Speed', 'Gravity', 'Darkness'],
       lines: [[], [], []],
       hand: [],
+      deck: [],
+      discard: [],
     }
   },
   currentPlayer: 1,
@@ -37,6 +41,13 @@ fetch('/data/cards.json')
   })
   .catch(e => console.error('Failed to load cards.json', e));
 
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
 function findCard(protocol, value) {
   if (!allCardsData) return null;
   const protocolData = allCardsData.protocols[protocol];
@@ -47,32 +58,54 @@ function findCard(protocol, value) {
 }
 
 function initializeGame() {
-  if (gameState.players[1].hand.length === 0) {
-    gameState.players[1].hand = [
-      findCard('Life', 1),
-      findCard('Light', 4),
-      findCard('Psychic', 2),
-      findCard('Speed', 3),
-      findCard('Gravity', 0),
-    ].filter(Boolean).map(card => ({ ...card, faceUp: true }));
-  }
+  [1, 2].forEach(pid => {
+    const player = gameState.players[pid];
+    player.deck = [];
 
-  gameState.players[1].lines = [[], [], []];
-  gameState.players[2].lines = [[], [], []];
+    // Add all cards from player's protocols to deck
+    player.protocols.forEach(protocol => {
+      const protocolCards = allCardsData.protocols[protocol]?.cards || [];
+      protocolCards.forEach(cardData => {
+        const card = { ...cardData, protocolColor: protocolColors[protocol], faceUp: false };
+        player.deck.push(card);
+      });
+    });
 
-  const fieldCardsP1 = [findCard('Life', 2), findCard('Light', 1)].filter(Boolean);
-  fieldCardsP1.forEach(card => {
-    gameState.players[1].lines[0].push({ ...card, faceUp: true });
-  });
+    shuffle(player.deck);
 
-  const fieldCardsP2 = [findCard('Psychic', 3), findCard('Speed', 1)].filter(Boolean);
-  fieldCardsP2.forEach(card => {
-    gameState.players[2].lines[1].push({ ...card, faceUp: true });
+    player.lines = [[], [], []];
+    player.hand = [];
+    player.discard = [];
+
+    // Draw initial 5 cards
+    for (let i = 0; i < 5 && player.deck.length > 0; i++) {
+      drawCard(pid);
+    }
   });
 
   renderGameBoard();
   renderHand();
   setupFlipToggle();
+  updateRefreshButton();
+}
+
+function drawCard(playerId) {
+  const player = gameState.players[playerId];
+  if (player.deck.length === 0) {
+    if (player.discard.length === 0) return null;
+    player.deck = player.discard.splice(0);
+    shuffle(player.deck);
+  }
+  const card = player.deck.pop();
+  player.hand.push(card);
+  return card;
+}
+
+function refreshHand(playerId) {
+  const player = gameState.players[playerId];
+  while (player.hand.length < 5) {
+    if (!drawCard(playerId)) break;
+  }
 }
 
 function renderGameBoard() {
@@ -82,9 +115,8 @@ function renderGameBoard() {
     const lines = playerDiv.querySelectorAll('.line');
 
     lines.forEach((lineDiv, idx) => {
-      lineDiv.innerHTML = ''; // clear previous
+      lineDiv.innerHTML = '';
 
-      // Render protocol name & color
       const protocolNameDiv = document.createElement('div');
       protocolNameDiv.classList.add('protocol-name');
       const protocolName = gameState.players[playerId].protocols[idx];
@@ -128,6 +160,7 @@ function renderGameBoard() {
             updateFlipToggleButton();
             renderGameBoard();
             renderHand();
+            updateRefreshButton();
           }
         };
       } else {
@@ -146,6 +179,7 @@ function renderHand() {
 
   if (!hand || hand.length === 0) {
     handDiv.textContent = 'No cards in hand';
+    updateRefreshButton();
     return;
   }
 
@@ -176,13 +210,15 @@ function renderHand() {
 
     cardDiv.addEventListener('click', () => {
       selectedCardIndex = idx;
-      selectedCardFaceUp = card.faceUp; // default to card's faceUp on select
+      selectedCardFaceUp = card.faceUp;
       updateFlipToggleButton();
       renderHand();
     });
 
     handDiv.appendChild(cardDiv);
   });
+
+  updateRefreshButton();
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
@@ -206,23 +242,4 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
 
   selectedCardIndex = null;
   selectedCardFaceUp = false;
-  updateFlipToggleButton();
-
-  renderGameBoard();
-  renderHand();
-}
-
-function updateFlipToggleButton() {
-  const btn = document.getElementById('flip-toggle-button');
-  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
-}
-
-function setupFlipToggle() {
-  const btn = document.getElementById('flip-toggle-button');
-  btn.addEventListener('click', () => {
-    if (selectedCardIndex === null) return;
-    selectedCardFaceUp = !selectedCardFaceUp;
-    updateFlipToggleButton();
-    renderHand();
-  });
-}
+  updateFlipToggle
