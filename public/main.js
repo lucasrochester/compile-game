@@ -6,6 +6,7 @@ const protocolColors = {
   Psychic: 'purple',
   Speed: 'white',
   Gravity: 'pink',
+  // Add other protocols as needed...
 };
 
 const gameState = {
@@ -79,9 +80,10 @@ function renderGameBoard() {
         if (!card.faceUp) cardDiv.classList.add('face-down');
         if (i < cards.length - 1) cardDiv.classList.add('covered');
 
-        cardDiv.style.borderColor = card.protocolColor || 'gray';
+        cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
         cardDiv.style.top = `${i * 80}px`;
         cardDiv.style.zIndex = i + 1;
+        cardDiv.style.left = '0';
 
         cardDiv.innerHTML = `
           <div class="card-section card-name">${card.name} (${card.value})</div>
@@ -100,7 +102,7 @@ function renderGameBoard() {
         lineDiv.appendChild(cardDiv);
       });
 
-      if (playerId === 1) {
+      if (playerId === gameState.currentPlayer) {
         lineDiv.style.cursor = 'pointer';
         lineDiv.onclick = () => {
           if (selectedCardIndex !== null) {
@@ -110,61 +112,5 @@ function renderGameBoard() {
             renderHand();
           }
         };
-      } else {
-        lineDiv.style.cursor = 'default';
-        lineDiv.onclick = null;
-      }
-    });
-  });
-}
 
-function renderHand() {
-  const handDiv = document.getElementById('hand');
-  handDiv.innerHTML = '';
-
-  const hand = gameState.players[gameState.currentPlayer].hand;
-
-  if (!hand || hand.length === 0) {
-    handDiv.textContent = 'No cards in hand';
-    return;
-  }
-
-  hand.forEach((card, idx) => {
-    const cardDiv = document.createElement('div');
-    cardDiv.classList.add('card', 'in-hand');
-    cardDiv.style.borderColor = card.protocolColor || 'gray';
-    cardDiv.style.cursor = 'pointer';
-
-    cardDiv.innerHTML = `
-      <div class="card-section card-name">${card.name} (${card.value})</div>
-      <div class="card-section card-top">${card.topEffect || ''}</div>
-      <div class="card-section card-middle">${card.middleEffect || ''}</div>
-      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
-    `;
-
-    cardDiv.style.background = idx === selectedCardIndex ? '#555' : '#333';
-
-    cardDiv.addEventListener('click', () => {
-      selectedCardIndex = idx;
-      renderHand();
-      alert(`Selected card: ${card.name}. Now click a line to play it.`);
-    });
-
-    handDiv.appendChild(cardDiv);
-  });
-}
-
-function playCardOnLine(playerId, handIndex, lineIndex) {
-  const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false;
-  gameState.players[playerId].lines[lineIndex].push(card);
-  renderGameBoard();
-  renderHand();
-}
-
-function flipCard(playerId, lineIndex, cardIndex) {
-  const card = gameState.players[playerId].lines[lineIndex][cardIndex];
-  card.faceUp = !card.faceUp;
-  renderGameBoard();
-}
 
