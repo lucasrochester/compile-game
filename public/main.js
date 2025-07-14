@@ -39,15 +39,15 @@ function renderGameBoard() {
 
       const cards = gameState.players[playerId].lines[idx];
 
-      cards.forEach((card, i) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.classList.add('card');
-        if (!card.faceUp) cardDiv.classList.add('face-down');
-        cardDiv.textContent = card.faceUp ? `${card.name} (${card.points})` : 'Face Down';
-        cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-        cardDiv.style.zIndex = i;
-        lineDiv.appendChild(cardDiv);
-      });
+     cards.forEach((card, i) => {
+      const cardDiv = document.createElement('div');
+      cardDiv.classList.add('card');
+      if (!card.faceUp) cardDiv.classList.add('face-down');
+      cardDiv.textContent = card.faceUp ? `${card.name} (${card.points})` : 'Face Down';
+      cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
+      cardDiv.style.zIndex = cards.length - i;  // higher zIndex for top cards
+      lineDiv.appendChild(cardDiv);
+    });
 
       // Player 1 lines clickable only
       if (playerId === 1) {
