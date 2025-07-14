@@ -44,34 +44,40 @@ body {
   overflow: hidden;
   border: 2px solid gray;
   transition: top 0.3s ease;
+  padding: 4px 8px;
 }
 
-/* Hide all text when face down on board */
+/* FULL text hide for face-down cards on board */
 .line .card.face-down:not(.in-hand) {
   color: transparent !important;
-  user-select: none;
   filter: brightness(0.4);
+  user-select: none;
 }
 
+/* Four equal vertical sections with good padding and wrapping */
 .card-section {
   flex: 1 1 0;
-  padding: 6px 8px;
+  padding: 4px 0;
   box-sizing: border-box;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
   white-space: normal;
   display: flex;
   align-items: center;
+  line-height: 1.2;
 }
 
+/* Name always visible, with bottom border */
 .card-name {
   font-weight: bold;
   border-bottom: 1.5px solid #555;
   font-size: 14px;
   justify-content: flex-start;
   flex: 0 0 20%;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
+/* Effects have borders except bottom one */
 .card-top {
   font-style: italic;
   border-bottom: 1.5px solid #555;
@@ -79,8 +85,12 @@ body {
   color: #ccc;
   justify-content: flex-start;
   flex: 1 1 26.7%;
+  padding-left: 4px;
+  padding-right: 4px;
+  overflow-y: auto;
 }
 
+/* Scroll if text is too long */
 .card-middle {
   font-style: italic;
   border-bottom: 1.5px solid #555;
@@ -88,6 +98,9 @@ body {
   color: #ccc;
   justify-content: flex-start;
   flex: 1 1 26.7%;
+  padding-left: 4px;
+  padding-right: 4px;
+  overflow-y: auto;
 }
 
 .card-bottom {
@@ -96,9 +109,12 @@ body {
   color: #ccc;
   justify-content: flex-start;
   flex: 1 1 26.7%;
+  padding-left: 4px;
+  padding-right: 4px;
+  overflow-y: auto;
 }
 
-/* When card is covered: only show name and top */
+/* Covered cards hide only middle and bottom, NOT top */
 .card.covered .card-middle,
 .card.covered .card-bottom {
   display: none;
@@ -130,6 +146,7 @@ body {
   color: #eee;
   display: flex;
   flex-direction: column;
+  overflow: visible;
 }
 
 #hand .card .card-section {
@@ -137,8 +154,10 @@ body {
   margin-bottom: 4px;
   overflow: visible;
   white-space: normal;
+  line-height: 1.2;
 }
 
 #hand .card:hover {
   background: #666;
 }
+
