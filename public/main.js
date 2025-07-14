@@ -1,3 +1,4 @@
+// ==== GAME STATE ====
 const gameState = {
   players: {
     1: { lines: [[], [], []], hand: [] },
@@ -8,18 +9,19 @@ const gameState = {
 
 let selectedCardIndex = null;
 
-// Sample cards for demo purposes
+// ==== SAMPLE CARDS ====
 const demoCards = [
   { name: 'Life 1', points: 1, protocolColor: 'green', faceUp: true },
   { name: 'Light 3', points: 3, protocolColor: 'yellow', faceUp: true },
   { name: 'Psychic 2', points: 2, protocolColor: 'purple', faceUp: true },
 ];
 
-// Initialize game state with some cards for both players
+// Initialize player 1 hand and lines with demo cards
 gameState.players[1].hand.push({ ...demoCards[0], faceUp: true });
 gameState.players[1].hand.push({ ...demoCards[1], faceUp: true });
 gameState.players[1].lines[0].push({ ...demoCards[2], faceUp: true });
 
+// Player 2 lines for visual
 gameState.players[2].lines[0].push({ ...demoCards[1], faceUp: true });
 gameState.players[2].lines[1].push({ ...demoCards[0], faceUp: true });
 
@@ -34,19 +36,20 @@ function renderGameBoard() {
 
     lines.forEach((lineDiv, idx) => {
       lineDiv.innerHTML = '';
+
       const cards = gameState.players[playerId].lines[idx];
+
       cards.forEach((card, i) => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
         if (!card.faceUp) cardDiv.classList.add('face-down');
         cardDiv.textContent = card.faceUp ? `${card.name} (${card.points})` : 'Face Down';
         cardDiv.style.border = `2px solid ${card.protocolColor || 'gray'}`;
-        cardDiv.style.zIndex = i;  // make sure top cards are on top visually
+        cardDiv.style.zIndex = i;
         lineDiv.appendChild(cardDiv);
       });
 
-
-      // Only player 1 can play cards on their lines for now
+      // Player 1 lines clickable only
       if (playerId === 1) {
         lineDiv.style.cursor = 'pointer';
         lineDiv.onclick = () => {
@@ -68,7 +71,15 @@ function renderGameBoard() {
 function renderHand() {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
-  gameState.players[1].hand.forEach((card, idx) => {
+
+  const hand = gameState.players[gameState.currentPlayer].hand;
+
+  if (hand.length === 0) {
+    handDiv.textContent = 'No cards in hand';
+    return;
+  }
+
+  hand.forEach((card, idx) => {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('card');
     cardDiv.textContent = card.name;
@@ -86,7 +97,7 @@ function renderHand() {
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   const card = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  card.faceUp = false; // play face down by default
+  card.faceUp = false;
   gameState.players[playerId].lines[lineIndex].push(card);
   console.log(`Played ${card.name} face down on line ${lineIndex} by Player ${playerId}`);
 }
