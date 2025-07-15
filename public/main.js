@@ -3,17 +3,17 @@ let allCardsData = null;
 const protocolColors = {
   Life: 'green',
   Light: 'yellow',
-  Fire: 'orange',      // Fire protocol added
+  Fire: 'orange',
   Speed: 'white',
   Gravity: 'pink',
   Darkness: 'darkslategray',
-  Psychic: 'purple',   // Keep Psychic for future if needed
+  Psychic: 'purple',
 };
 
 const gameState = {
   players: {
     1: {
-      protocols: ['Life', 'Light', 'Fire'],  // Fire instead of Psychic here
+      protocols: ['Life', 'Light', 'Fire'],
       lines: [[], [], []],
       hand: [],
       deck: [],
@@ -152,14 +152,14 @@ function setupLineClickDelegation() {
         return;
       }
 
-      playCardOnLine(playerId, selectedCardIndex, lineIndex);
-      selectedCardIndex = null;
-      selectedCardFaceUp = false;
-      updateFlipToggleButton();
-
-      renderGameBoard();
-      renderHand();
-      updateButtonsState();
+      playCardOnLine(playerId, selectedCardIndex, lineIndex).then(() => {
+        selectedCardIndex = null;
+        selectedCardFaceUp = false;
+        updateFlipToggleButton();
+        renderGameBoard();
+        renderHand();
+        updateButtonsState();
+      });
     });
   });
 }
@@ -389,22 +389,21 @@ function compileProtocol(playerId, lineIndex) {
   gameState.players[2].lines[lineIndex] = [];
 
   const protocol = gameState.players[playerId].protocols[lineIndex];
-  const compiledAlready = gameState.compiledProtocols[playerId].includes(protocol);
-  if (!compiledAlready) {
+  if (!gameState.compiledProtocols[playerId].includes(protocol)) {
     gameState.compiledProtocols[playerId].push(protocol);
   } else {
+    // Recompiling an already compiled protocol: draw top card from opponent's deck
     const opponentId = playerId === 1 ? 2 : 1;
-    const opponent = gameState.players[opponentId];
-    if (opponent.deck.length === 0 && opponent.discard.length > 0) {
-      opponent.deck = opponent.discard.splice(0);
-      shuffle(opponent.deck);
+    if (gameState.players[opponentId].deck.length === 0) {
+      if (gameState.players[opponentId].discard.length > 0) {
+        gameState.players[opponentId].deck = gameState.players[opponentId].discard.splice(0);
+        shuffle(gameState.players[opponentId].deck);
+      }
     }
-    if (opponent.deck.length > 0) {
-      const drawnCard = opponent.deck.pop();
-      drawnCard.faceUp = true;
+    if (gameState.players[opponentId].deck.length > 0) {
+      const drawnCard = gameState.players[opponentId].deck.pop();
       gameState.players[playerId].hand.push(drawnCard);
-      alert(`Player ${playerId} recompiling an already compiled protocol! Drew a card from opponent's deck: ${drawnCard.name}`);
-      renderHand();
+      alert(`Player ${playerId} draws a card from opponent's deck due to recompilation.`);
     }
   }
 
@@ -416,13 +415,16 @@ function compileProtocol(playerId, lineIndex) {
 
   if (gameState.compiledProtocols[playerId].length === gameState.players[playerId].protocols.length) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
+    // TODO: add game end logic here
   }
 
   gameState.phase = 'cache';
   runPhase();
 }
 
-function triggerEffects(phase) {}
+function triggerEffects(phase) {
+  // TODO: Implement start/end effects here
+}
 
 function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
@@ -433,8 +435,6 @@ function updateButtonsState() {
     const hand = gameState.players[gameState.currentPlayer].hand;
     refreshBtn.disabled = hand.length >= 5 || gameState.actionTaken;
   }
-
-  updateDiscardConfirmButton();
 }
 
 function renderHand() {
@@ -527,7 +527,7 @@ function renderHand() {
   updateRefreshButton();
 }
 
-function playCardOnLine(playerId, handIndex, lineIndex) {
+async function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode) {
     alert("You must discard cards before continuing!");
     return;
@@ -586,10 +586,9 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   updateButtonsState();
 
   if (removedCard.name === "Fire 1" && removedCard.faceUp) {
-    handleFire1Effect(removedCard, playerId).then(() => {
-      gameState.phase = 'cache';
-      runPhase();
-    });
+    await handleFire1Effect(removedCard, playerId);
+    gameState.phase = 'cache';
+    runPhase();
   } else {
     setTimeout(() => {
       gameState.phase = 'cache';
@@ -885,54 +884,50 @@ function showCardPopup(card) {
 }
 
 async function handleFire1Effect(card, playerId) {
+  const player = gameState.players[playerId];
+  alert("Fire 1 effect triggered! First, discard a card.");
+
   await showCardPopup(card);
 
-  const player = gameState.players[playerId];
   if (player.hand.length === 0) {
-    alert("You have no cards to discard, effect ends.");
+    alert("No cards in hand to discard, Fire 1 effect ends.");
     return;
   }
 
   gameState.fire1DiscardMode = true;
   gameState.fire1DiscardSelectedIndex = null;
-  renderHand();
-  updateButtonsState();
+
   updateDiscardInstruction();
   updateDiscardConfirmButton();
+  renderHand();
 
-  const container = document.getElementById('fire1-discard-container');
-  container.style.display = 'block';
-
-  // Wait for discard confirm click to continue (handled by setupFire1DiscardConfirmUI)
-}
-
-function setupFire1DiscardConfirmUI() {
-  const container = document.getElementById('fire1-discard-container');
-  const btn = document.getElementById('fire1-discard-confirm-button');
-
-  if (btn && !btn.hasSetup) {
-    btn.addEventListener('click', () => {
-      if (!gameState.fire1DiscardMode) return;
+  return new Promise((resolve) => {
+    const btn = document.getElementById('fire1-discard-confirm-button');
+    btn.onclick = () => {
       if (gameState.fire1DiscardSelectedIndex === null) {
-        alert("Please select a card to discard.");
+        alert("Please select a card to discard for Fire 1 effect.");
         return;
       }
-      const player = gameState.players[gameState.currentPlayer];
       const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
       player.discard.push(discardedCard);
-      alert(`Discarded card: ${discardedCard.name}`);
+      alert(`You discarded: ${discardedCard.name}`);
 
       gameState.fire1DiscardMode = false;
       gameState.fire1DiscardSelectedIndex = null;
-      container.style.display = 'none';
 
+      updateDiscardInstruction();
+      updateDiscardConfirmButton();
       renderHand();
-      updateButtonsState();
+
+      alert("Now, select a card on the board to delete.");
 
       gameState.deleteSelectionMode = true;
-      alert("Select a card on the board to delete.");
-    });
-    btn.hasSetup = true;
-  }
+      renderGameBoard();
+      updateButtonsState();
+
+      resolve();
+    };
+  });
 }
+
 
