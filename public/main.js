@@ -84,64 +84,37 @@ function initializeGame() {
 }
 
 function setupLineClickDelegation() {
-  const player1LinesContainer = document.querySelector('#player1 .lines');
-  player1LinesContainer.addEventListener('click', (e) => {
-    let lineDiv = e.target;
-    while (lineDiv && !lineDiv.classList.contains('line')) {
-      lineDiv = lineDiv.parentElement;
-    }
-    if (!lineDiv) return;
+  ['player1', 'player2'].forEach(pidStr => {
+    const playerId = parseInt(pidStr.replace('player', ''));
+    const container = document.querySelector(`#${pidStr} .lines`);
+    container.addEventListener('click', (e) => {
+      let lineDiv = e.target;
+      while (lineDiv && !lineDiv.classList.contains('line')) {
+        lineDiv = lineDiv.parentElement;
+      }
+      if (!lineDiv) return;
 
-    const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
-    if (isNaN(lineIndex)) return;
+      const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
+      if (isNaN(lineIndex)) return;
 
-    if (selectedCardIndex === null) {
-      alert('No card selected to play!');
-      return;
-    }
+      if (playerId !== gameState.currentPlayer) {
+        alert(`It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.`);
+        return;
+      }
 
-    if (gameState.currentPlayer !== 1) {
-      alert("It's not Player 1's turn!");
-      return;
-    }
+      if (selectedCardIndex === null) {
+        alert('No card selected to play!');
+        return;
+      }
 
-    playCardOnLine(1, selectedCardIndex, lineIndex);
-    selectedCardIndex = null;
-    selectedCardFaceUp = false;
-    updateFlipToggleButton();
-    renderGameBoard();
-    renderHand();
-    updateButtonsState();
-  });
-
-  const player2LinesContainer = document.querySelector('#player2 .lines');
-  player2LinesContainer.addEventListener('click', (e) => {
-    let lineDiv = e.target;
-    while (lineDiv && !lineDiv.classList.contains('line')) {
-      lineDiv = lineDiv.parentElement;
-    }
-    if (!lineDiv) return;
-
-    const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
-    if (isNaN(lineIndex)) return;
-
-    if (selectedCardIndex === null) {
-      alert('No card selected to play!');
-      return;
-    }
-
-    if (gameState.currentPlayer !== 2) {
-      alert("It's not Player 2's turn!");
-      return;
-    }
-
-    playCardOnLine(2, selectedCardIndex, lineIndex);
-    selectedCardIndex = null;
-    selectedCardFaceUp = false;
-    updateFlipToggleButton();
-    renderGameBoard();
-    renderHand();
-    updateButtonsState();
+      playCardOnLine(playerId, selectedCardIndex, lineIndex);
+      selectedCardIndex = null;
+      selectedCardFaceUp = false;
+      updateFlipToggleButton();
+      renderGameBoard();
+      renderHand();
+      updateButtonsState();
+    });
   });
 }
 
@@ -228,7 +201,6 @@ function checkCompile() {
 function actionPhase() {
   console.log('Action phase');
   updateButtonsState();
-  // Player can play cards or refresh hand here
 }
 
 function compileProtocol(playerId, lineIndex) {
@@ -269,11 +241,11 @@ function endPhase() {
   renderGameBoard();
   renderHand();
 
-  // Do NOT auto-switch turn here. Wait for user to click "End Turn"
+  // Wait for user to press "End Turn" button to switch players
 }
 
 function triggerEffects(phase) {
-  // Stub for card effects on start/end etc.
+  // Stub for effects
 }
 
 function updateButtonsState() {
@@ -293,9 +265,22 @@ document.getElementById('end-turn-button').addEventListener('click', () => {
 });
 
 function updateTurnUI() {
-  document.getElementById('player1').style.display = gameState.currentPlayer === 1 ? 'block' : 'none';
-  document.getElementById('player2').style.display = gameState.currentPlayer === 2 ? 'block' : 'none';
+  // Show both players always
+  document.getElementById('player1').style.display = 'block';
+  document.getElementById('player2').style.display = 'block';
 
+  // Highlight current player
+  const p1 = document.getElementById('player1');
+  const p2 = document.getElementById('player2');
+  if (gameState.currentPlayer === 1) {
+    p1.classList.add('current-turn');
+    p2.classList.remove('current-turn');
+  } else {
+    p2.classList.add('current-turn');
+    p1.classList.remove('current-turn');
+  }
+
+  // Update turn indicator
   document.getElementById('turn-indicator').textContent = `Current Turn: Player ${gameState.currentPlayer}`;
 
   renderHand();
@@ -470,5 +455,6 @@ function checkCache() {
     player.discard.push(discarded);
   }
 }
+
 
 
