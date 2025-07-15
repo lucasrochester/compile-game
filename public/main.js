@@ -78,7 +78,9 @@ function initializeGame() {
     player.hand = [];
     player.discard = [];
 
-    for (let i = 0; i < 5 && player.deck.length > 0; i++) {
+    // Draw 4 cards first if Player 1, else 5 normally
+    const cardsToDraw = (pid === 1) ? 4 : 5;
+    for (let i = 0; i < cardsToDraw && player.deck.length > 0; i++) {
       drawCard(pid);
     }
 
@@ -384,17 +386,36 @@ function endPhase() {
 function compileProtocol(playerId, lineIndex) {
   console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
 
+  // Move all cards in line to discard piles
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
   gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
   gameState.players[1].lines[lineIndex] = [];
   gameState.players[2].lines[lineIndex] = [];
 
   const protocol = gameState.players[playerId].protocols[lineIndex];
-  if (!gameState.compiledProtocols[playerId].includes(protocol)) {
-    gameState.compiledProtocols[playerId].push(protocol);
-  }
+  const hasCompiledBefore = gameState.compiledProtocols[playerId].includes(protocol);
 
-  alert(`Player ${playerId} compiled protocol ${protocol}!`);
+  if (!hasCompiledBefore) {
+    gameState.compiledProtocols[playerId].push(protocol);
+    alert(`Player ${playerId} compiled protocol ${protocol}!`);
+  } else {
+    alert(`Player ${playerId} recompiled protocol ${protocol}! Drawing 1 card from opponent's deck.`);
+    // Draw 1 card from opponent's deck
+    const opponentId = playerId === 1 ? 2 : 1;
+    const opponent = gameState.players[opponentId];
+    if (opponent.deck.length === 0 && opponent.discard.length > 0) {
+      opponent.deck = opponent.discard.splice(0);
+      shuffle(opponent.deck);
+    }
+    if (opponent.deck.length > 0) {
+      const drawnCard = opponent.deck.pop();
+      drawnCard.faceUp = true;
+      gameState.players[playerId].hand.push(drawnCard);
+      alert(`Player ${playerId} drew "${drawnCard.name}" from opponent's deck.`);
+    } else {
+      alert("Opponent's deck is empty, no card drawn.");
+    }
+  }
 
   updateButtonsState();
   renderGameBoard();
@@ -532,15 +553,18 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
     return;
   }
 
+  // Removed check blocking playing on compiled protocol, so allow playing anywhere
+  /*
   const protocol = gameState.players[playerId].protocols[lineIndex];
   if (gameState.compiledProtocols[playerId].includes(protocol)) {
     alert(`Protocol "${protocol}" is already compiled. You cannot play cards here.`);
     return;
   }
+  */
 
   const card = gameState.players[playerId].hand[handIndex];
   const cardProtocol = card.name.split(' ')[0];
-  const lineProtocol = protocol;
+  const lineProtocol = gameState.players[playerId].protocols[lineIndex];
 
   if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
     alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
@@ -737,7 +761,6 @@ function renderGameBoard() {
         cardDiv.dataset.line = idx;
         cardDiv.dataset.cardIndex = i;
 
-        // If delete selection mode active, make cards clickable for delete
         if (gameState.deleteSelectionMode) {
           cardDiv.classList.add('selectable-delete');
           cardDiv.style.cursor = 'pointer';
@@ -755,7 +778,7 @@ function renderGameBoard() {
 
       const protocol = gameState.players[playerId].protocols[idx];
       const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
-      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode) ? 'pointer' : 'default';
+      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode) ? 'pointer' : 'default';
     });
   });
 }
@@ -793,7 +816,7 @@ async function handleFire1Effect(card, playerId) {
 
   alert("Fire 1 effect: You must discard 1 card from your hand.");
 
-  // For now, auto discard first card
+  // For now, auto discard first card in hand
   const discardedCard = player.hand.shift();
   player.discard.push(discardedCard);
   alert(`Discarded card: ${discardedCard.name}`);
@@ -830,9 +853,12 @@ async function handleDeleteSelectionClick(cardDiv) {
   alert(`Deleted ${removedCard.name} from Player ${ownerId}'s line ${lineIndex}`);
 
   gameState.deleteSelectionMode = false;
-  gameState.deleteSelectionResolve();
-  gameState.deleteSelectionResolve = null;
+  if (gameState.deleteSelectionResolve) {
+    gameState.deleteSelectionResolve();
+    gameState.deleteSelectionResolve = null;
+  }
 
   renderGameBoard();
   updateButtonsState();
 }
+
