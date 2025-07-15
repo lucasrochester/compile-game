@@ -28,7 +28,7 @@ const gameState = {
   },
   currentPlayer: 1,
   controlComponent: false,
-  mustCompileLine: null,
+  mustCompileLineNextTurn: {1: null, 2: null}, // tracks line to compile next turn per player
   compiledProtocols: {1: [], 2: []},
   phase: 'start',
   actionTaken: false,
@@ -112,6 +112,11 @@ function setupLineClickDelegation() {
         return;
       }
 
+      if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+        alert("You must compile your protocol this turn; no other actions allowed.");
+        return;
+      }
+
       if (selectedCardIndex === null) {
         alert('No card selected to play!');
         return;
@@ -122,7 +127,6 @@ function setupLineClickDelegation() {
       selectedCardFaceUp = false;
       updateFlipToggleButton();
 
-      // After playing a card, action taken and proceed to cache phase
       gameState.actionTaken = true;
 
       renderGameBoard();
@@ -160,12 +164,35 @@ function refreshHand(playerId) {
 function startTurn() {
   console.log('Starting turn for player', gameState.currentPlayer);
   gameState.controlComponent = false;
-  gameState.mustCompileLine = null;
   gameState.phase = 'start';
   gameState.actionTaken = false;
   gameState.cacheDiscardMode = false;
   gameState.cacheDiscardSelectedIndices.clear();
   updateTurnUI();
+
+  // On start of turn, check if must compile line is set, and if conditions still hold
+  const mustCompileLine = gameState.mustCompileLineNextTurn[gameState.currentPlayer];
+  if (mustCompileLine !== null) {
+    // Check if conditions still hold to compile now
+    const playerId = gameState.currentPlayer;
+    const opponentId = playerId === 1 ? 2 : 1;
+    const playerValue = lineTotalValue(playerId, mustCompileLine);
+    const opponentValue = lineTotalValue(opponentId, mustCompileLine);
+
+    if (playerValue >= 10 && playerValue > opponentValue) {
+      // Must compile this turn - force it
+      alert(`You must compile protocol "${gameState.players[playerId].protocols[mustCompileLine]}" this turn!`);
+
+      // Only allow compile action this turn — no other actions allowed
+      gameState.phase = 'compileForced';
+      runPhase();
+      return;
+    } else {
+      // Condition no longer met, clear the mustCompileLine flag
+      gameState.mustCompileLineNextTurn[gameState.currentPlayer] = null;
+    }
+  }
+
   runPhase();
 }
 
@@ -179,6 +206,9 @@ function runPhase() {
       break;
     case 'compile':
       checkCompilePhase();
+      break;
+    case 'compileForced':
+      forcedCompilePhase();
       break;
     case 'action':
       actionPhase();
@@ -234,32 +264,38 @@ function checkCompilePhase() {
   const opponentId = playerId === 1 ? 2 : 1;
   gameState.mustCompileLine = null;
 
+  // Check if compile condition met now, mark for next turn but DO NOT compile this turn
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
-    console.log(`Line ${line}: player=${playerValue}, opponent=${opponentValue}`);
     if (playerValue >= 10 && playerValue > opponentValue) {
-      gameState.mustCompileLine = line;
+      gameState.mustCompileLineNextTurn[playerId] = line;
       break;
     }
   }
 
-  if (gameState.mustCompileLine !== null) {
-    console.log(`Auto-compiling protocol on line ${gameState.mustCompileLine + 1}`);
-    setTimeout(() => {
-      compileProtocol(playerId, gameState.mustCompileLine);
-    }, 100);
-  } else {
-    gameState.phase = 'action';
-    runPhase();
-  }
+  // Proceed to action phase
+  gameState.phase = 'action';
+  runPhase();
+}
+
+// Forced compile phase - only allowed action is compiling that line
+function forcedCompilePhase() {
+  const playerId = gameState.currentPlayer;
+  const line = gameState.mustCompileLineNextTurn[playerId];
+
+  compileProtocol(playerId, line);
+
+  // Clear mustCompileLine after compiling
+  gameState.mustCompileLineNextTurn[playerId] = null;
 }
 
 function actionPhase() {
   console.log('Action phase');
   updateButtonsState();
-  // Player can play 1 card or refresh once this phase.
-  // Wait for player input.
+
+  // Player may play exactly one card OR refresh hand
+  // Handlers on buttons and card clicks enforce single action per turn
 }
 
 function cachePhase() {
@@ -283,7 +319,6 @@ function cachePhase() {
   updateDiscardInstruction();
   updateDiscardConfirmButton();
 
-  // Render hand so discardable cards can be selected
   renderHand();
 }
 
@@ -291,7 +326,6 @@ function endPhase() {
   console.log('End phase');
   triggerEffects('End');
 
-  // Clear discard mode UI if somehow still active
   gameState.cacheDiscardMode = false;
   document.getElementById('discard-confirm-container').style.display = 'none';
   gameState.cacheDiscardSelectedIndices.clear();
@@ -303,7 +337,6 @@ function endPhase() {
   renderHand();
   updateButtonsState();
 
-  // Auto next turn after short delay so player sees end effects
   setTimeout(() => {
     gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
     startTurn();
@@ -323,8 +356,6 @@ function compileProtocol(playerId, lineIndex) {
     gameState.compiledProtocols[playerId].push(protocol);
   }
 
-  gameState.mustCompileLine = null;
-
   alert(`Player ${playerId} compiled protocol ${protocol}!`);
 
   updateButtonsState();
@@ -334,10 +365,10 @@ function compileProtocol(playerId, lineIndex) {
 
   if (gameState.compiledProtocols[playerId].length === 3) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
-    // TODO: stop or reset game here if desired
+    // TODO: add game end logic here
   }
 
-  // Skip action phase since compiling used the action
+  // After compile phase, move to cache phase
   gameState.phase = 'cache';
   runPhase();
 }
@@ -349,15 +380,13 @@ function triggerEffects(phase) {
 function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
 
-  if (gameState.cacheDiscardMode) {
-    refreshBtn.disabled = true; // Disable refresh during discard mode
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+    refreshBtn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
     refreshBtn.disabled = hand.length >= 5 || gameState.actionTaken;
   }
 }
-
-// --- HAND RENDER & INTERACTION ---
 
 function renderHand() {
   const handDiv = document.getElementById('hand');
@@ -381,7 +410,6 @@ function renderHand() {
     cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
 
     if (gameState.cacheDiscardMode) {
-      // In discard mode: enable multi-select for discards
       cardDiv.style.cursor = 'pointer';
       if (gameState.cacheDiscardSelectedIndices.has(idx)) {
         cardDiv.classList.add('discard-select');
@@ -410,7 +438,6 @@ function renderHand() {
 
     cardDiv.addEventListener('click', () => {
       if (gameState.cacheDiscardMode) {
-        // Toggle discard selection
         if (gameState.cacheDiscardSelectedIndices.has(idx)) {
           gameState.cacheDiscardSelectedIndices.delete(idx);
         } else {
@@ -420,7 +447,10 @@ function renderHand() {
         updateDiscardConfirmButton();
         renderHand();
       } else {
-        // Normal hand card select to play
+        if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+          alert("You must compile your protocol this turn; no other actions allowed.");
+          return;
+        }
         selectedCardIndex = idx;
         selectedCardFaceUp = card.faceUp;
         updateFlipToggleButton();
@@ -445,6 +475,10 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   }
   if (gameState.actionTaken) {
     alert("You already took an action this turn!");
+    return;
+  }
+  if (gameState.mustCompileLineNextTurn[playerId] !== null) {
+    alert("You must compile your protocol this turn; no other actions allowed.");
     return;
   }
 
@@ -484,8 +518,6 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   }, 100);
 }
 
-// --- REFRESH BUTTON HANDLER ---
-
 document.getElementById('refresh-button').addEventListener('click', () => {
   if (gameState.cacheDiscardMode) {
     alert("You must discard cards before continuing!");
@@ -493,6 +525,10 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   }
   if (gameState.actionTaken) {
     alert("You already took an action this turn!");
+    return;
+  }
+  if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+    alert("You must compile your protocol this turn; no other actions allowed.");
     return;
   }
 
@@ -507,8 +543,6 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   }, 100);
 });
 
-// --- DISCARD CONFIRM BUTTON SETUP ---
-
 function setupDiscardConfirmButton() {
   const btn = document.getElementById('discard-confirm-button');
   btn.addEventListener('click', () => {
@@ -521,7 +555,6 @@ function setupDiscardConfirmButton() {
     }
 
     // Remove selected cards from hand and add to discard pile
-    // Sort indices descending so removal from array doesn't mess up indices
     const indices = Array.from(gameState.cacheDiscardSelectedIndices).sort((a,b) => b - a);
     for (const idx of indices) {
       const [removed] = player.hand.splice(idx, 1);
@@ -559,8 +592,6 @@ function updateDiscardConfirmButton() {
   btn.disabled = selectedCount !== requiredDiscardCount;
 }
 
-// --- UTILS ---
-
 function lineTotalValue(playerId, lineIndex) {
   const cards = gameState.players[playerId].lines[lineIndex];
   return cards.reduce((sum, card) => sum + (card.faceUp ? card.value : 0), 0);
@@ -587,7 +618,7 @@ function setupFlipToggle() {
 
 function updateRefreshButton() {
   const btn = document.getElementById('refresh-button');
-  if (gameState.cacheDiscardMode) {
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
     btn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
@@ -644,7 +675,7 @@ function renderGameBoard() {
 
       const protocol = gameState.players[playerId].protocols[idx];
       const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
-      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode) ? 'pointer' : 'default';
+      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null) ? 'pointer' : 'default';
     });
   });
 }
@@ -669,3 +700,4 @@ function updateTurnUI() {
   renderGameBoard();
   updateButtonsState();
 }
+
