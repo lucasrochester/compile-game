@@ -34,6 +34,8 @@ const gameState = {
   actionTaken: false,
   cacheDiscardMode: false,
   cacheDiscardSelectedIndices: new Set(),
+  compileSelectionMode: false,
+  compileEligibleLines: [],
 };
 
 let selectedCardIndex = null;
@@ -105,6 +107,10 @@ function setupLineClickDelegation() {
         alert("You must compile your protocol this turn; no other actions allowed.");
         return;
       }
+      if (gameState.compileSelectionMode) {
+        alert("Please select a protocol to compile first.");
+        return;
+      }
       if (playerId !== gameState.currentPlayer) {
         alert(`It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.`);
         return;
@@ -162,6 +168,8 @@ function startTurn() {
   gameState.actionTaken = false;
   gameState.cacheDiscardMode = false;
   gameState.cacheDiscardSelectedIndices.clear();
+  gameState.compileSelectionMode = false;
+  gameState.compileEligibleLines = [];
   updateTurnUI();
 
   const mustCompileLine = gameState.mustCompileLineNextTurn[gameState.currentPlayer];
@@ -236,19 +244,61 @@ function checkCompilePhase() {
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
 
-  gameState.mustCompileLineNextTurn[playerId] = null;
+  if (gameState.compileSelectionMode) {
+    // Already waiting on player to pick — do nothing
+    return;
+  }
+
+  const eligibleLines = [];
 
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
     if (playerValue >= 10 && playerValue > opponentValue) {
-      gameState.mustCompileLineNextTurn[playerId] = line;
-      break;
+      eligibleLines.push(line);
     }
   }
 
-  gameState.phase = 'action';
-  runPhase();
+  if (eligibleLines.length === 0) {
+    gameState.mustCompileLineNextTurn[playerId] = null;
+    gameState.phase = 'action';
+    runPhase();
+  } else if (eligibleLines.length === 1) {
+    alert(`Auto-compiling protocol "${gameState.players[playerId].protocols[eligibleLines[0]]}"`);
+    compileProtocol(playerId, eligibleLines[0]);
+  } else {
+    gameState.compileSelectionMode = true;
+    gameState.compileEligibleLines = eligibleLines;
+    promptCompileSelection(playerId, eligibleLines);
+  }
+}
+
+function promptCompileSelection(playerId, lines) {
+  gameState.actionTaken = true;
+  gameState.mustCompileLineNextTurn[playerId] = null;
+
+  let message = 'Multiple protocols qualify for compilation. Choose one:\n';
+  lines.forEach(line => {
+    message += `${line}: ${gameState.players[playerId].protocols[line]}\n`;
+  });
+
+  let choice = null;
+  while (choice === null) {
+    const input = prompt(message + 'Enter the number of the protocol line to compile:');
+    if (input === null) {
+      alert('You must select a protocol to compile.');
+      continue;
+    }
+    const num = parseInt(input);
+    if (lines.includes(num)) {
+      choice = num;
+    } else {
+      alert('Invalid selection. Try again.');
+    }
+  }
+
+  gameState.compileSelectionMode = false;
+  compileProtocol(playerId, choice);
 }
 
 function forcedCompilePhase() {
@@ -324,7 +374,6 @@ function compileProtocol(playerId, lineIndex) {
   updateButtonsState();
   renderGameBoard();
   renderHand();
-  checkCache();
 
   if (gameState.compiledProtocols[playerId].length === 3) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
@@ -342,7 +391,7 @@ function triggerEffects(phase) {
 function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
 
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode) {
     refreshBtn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
@@ -413,6 +462,10 @@ function renderHand() {
           alert("You must compile your protocol this turn; no other actions allowed.");
           return;
         }
+        if (gameState.compileSelectionMode) {
+          alert("Please select a protocol to compile first.");
+          return;
+        }
         if (gameState.actionTaken) {
           alert("You already took an action this turn!");
           return;
@@ -445,6 +498,10 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   }
   if (gameState.mustCompileLineNextTurn[playerId] !== null) {
     alert("You must compile your protocol this turn; no other actions allowed.");
+    return;
+  }
+  if (gameState.compileSelectionMode) {
+    alert("Please select a protocol to compile first.");
     return;
   }
 
@@ -495,6 +552,10 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   }
   if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
     alert("You must compile your protocol this turn; no other actions allowed.");
+    return;
+  }
+  if (gameState.compileSelectionMode) {
+    alert("Please select a protocol to compile first.");
     return;
   }
 
@@ -587,7 +648,7 @@ function setupFlipToggle() {
 
 function updateRefreshButton() {
   const btn = document.getElementById('refresh-button');
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode) {
     btn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
@@ -644,7 +705,7 @@ function renderGameBoard() {
 
       const protocol = gameState.players[playerId].protocols[idx];
       const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
-      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken) ? 'pointer' : 'default';
+      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode) ? 'pointer' : 'default';
     });
   });
 }
