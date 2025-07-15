@@ -148,6 +148,7 @@ function initializeGame() {
 
   setupLineClickDelegation();
   setupDiscardConfirmButton();
+  setupFire1DiscardConfirmButton();
 }
 
 function setupLineClickDelegation() {
@@ -514,14 +515,12 @@ function renderHand() {
 
     // Highlight card if in Fire 1 discard selection mode and this card is selected for discard
     if (gameState.fire1DiscardMode) {
-  if (gameState.fire1DiscardSelectedIndex === idx) {
-    gameState.fire1DiscardSelectedIndex = null;
-  } else {
-    gameState.fire1DiscardSelectedIndex = idx;
-  }
-  updateDiscardConfirmButton();
-  updateDiscardInstruction();
-  renderHand();
+      cardDiv.style.cursor = 'pointer';
+      if (gameState.fire1DiscardSelectedIndex === idx) {
+        cardDiv.classList.add('discard-select');
+      } else {
+        cardDiv.classList.remove('discard-select');
+      }
     } else if (gameState.cacheDiscardMode) {
       cardDiv.style.cursor = 'pointer';
       if (gameState.cacheDiscardSelectedIndices.has(idx)) {
@@ -567,6 +566,8 @@ function renderHand() {
         } else {
           gameState.fire1DiscardSelectedIndex = idx;
         }
+        updateDiscardConfirmButton();
+        updateDiscardInstruction();
         renderHand();
       } else {
         if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
@@ -712,6 +713,11 @@ function setupDiscardConfirmButton() {
       return;
     }
 
+    // DEBUG LOG
+    console.log("Discarding cards at indices:", Array.from(gameState.cacheDiscardSelectedIndices));
+    console.log("Current hand size before discard:", player.hand.length);
+
+    // Sort descending to avoid index shift on splice
     const indices = Array.from(gameState.cacheDiscardSelectedIndices).sort((a,b) => b - a);
     for (const idx of indices) {
       const [removed] = player.hand.splice(idx, 1);
@@ -756,58 +762,12 @@ function setupFire1DiscardConfirmButton() {
 
       gameState.deleteSelectionMode = true;
       alert("Select a card on the board to delete.");
-
-      // No automatic phase transition here, wait for player to click card to delete on board
-    });
-  }
-}
-
-// Call this once in initialize or after DOM loaded
-function setupFire1DiscardConfirmUI() {
-  let container = document.getElementById('fire1-discard-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'fire1-discard-container';
-    container.style.marginTop = '10px';
-    container.style.display = 'none';
-
-    const btn = document.createElement('button');
-    btn.id = 'fire1-discard-confirm-button';
-    btn.textContent = 'Confirm Discard';
-    btn.disabled = true;
-    container.appendChild(btn);
-
-    document.body.appendChild(container);
-
-    btn.addEventListener('click', () => {
-      if (!gameState.fire1DiscardMode) return;
-      if (gameState.fire1DiscardSelectedIndex === null) {
-        alert("Please select a card to discard.");
-        return;
-      }
-      // Remove the selected card from hand and put in discard pile
-      const player = gameState.players[gameState.currentPlayer];
-      const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
-      player.discard.push(discardedCard);
-      alert(`Discarded card: ${discardedCard.name}`);
-
-      // End discard mode and start delete mode
-      gameState.fire1DiscardMode = false;
-      gameState.fire1DiscardSelectedIndex = null;
-      container.style.display = 'none';
-
-      renderHand();
-      updateButtonsState();
-
-      gameState.deleteSelectionMode = true;
-      alert("Select a card on the board to delete.");
     });
   }
 }
 
 function updateDiscardInstruction() {
   if (gameState.fire1DiscardMode) {
-    const player = gameState.players[gameState.currentPlayer];
     const instructionDiv = document.getElementById('discard-instruction');
     instructionDiv.textContent = `Select 1 card from your hand to discard for Fire 1 effect.`;
   } else {
@@ -914,13 +874,18 @@ function renderGameBoard() {
         cardDiv.style.zIndex = i + 1;
         cardDiv.style.left = '0';
 
-        // If in deleteSelectionMode, highlight cards clickable for delete
+        // Restrict delete selection to top cards only
         if (gameState.deleteSelectionMode) {
-          cardDiv.style.cursor = 'pointer';
-          cardDiv.classList.add('delete-selectable');
-          cardDiv.onclick = () => {
-            handleDeleteSelection(playerId, idx, i, card);
-          };
+          if (i === cards.length - 1) {
+            cardDiv.style.cursor = 'pointer';
+            cardDiv.classList.add('delete-selectable');
+            cardDiv.onclick = () => {
+              handleDeleteSelection(playerId, idx, i, card);
+            };
+          } else {
+            cardDiv.style.cursor = 'default';
+            cardDiv.onclick = null;
+          }
         } else {
           cardDiv.style.cursor = 'default';
           cardDiv.onclick = null;
@@ -950,20 +915,17 @@ function renderGameBoard() {
 function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   if (!gameState.deleteSelectionMode) return;
 
-  // Determine card owner
   let ownerId = null;
   if (gameState.players[1].lines[lineIndex].includes(card)) ownerId = 1;
   else if (gameState.players[2].lines[lineIndex].includes(card)) ownerId = 2;
   else return alert("Card ownership unknown");
 
-  // Only allow deleting top card in stack
   const ownerLine = gameState.players[ownerId].lines[lineIndex];
   if (cardIndex !== ownerLine.length - 1) {
     alert("You can only delete the top card of a stack.");
     return;
   }
 
-  // Proceed with delete
   ownerLine.splice(cardIndex, 1);
   gameState.players[ownerId].discard.push(card);
   alert(`Deleted card: ${card.name}`);
@@ -978,10 +940,8 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   runPhase();
 }
 
-
 async function handleFire1Effect(card, playerId) {
   return new Promise((resolve) => {
-    // Show popup modal for Fire 1 card to both players (simulate with alert for now)
     showCardPopup(card);
 
     gameState._fire1AfterPopupResolve = () => {
@@ -993,7 +953,6 @@ async function handleFire1Effect(card, playerId) {
         return;
       }
 
-      // Start discard selection mode for Fire 1 effect
       gameState.fire1DiscardMode = true;
       gameState.fire1DiscardSelectedIndex = null;
       renderHand();
@@ -1001,18 +960,15 @@ async function handleFire1Effect(card, playerId) {
       updateDiscardInstruction();
       updateDiscardConfirmButton();
 
-      // Show Fire 1 discard confirm UI
       let container = document.getElementById('fire1-discard-container');
       if (!container) setupFire1DiscardConfirmUI();
-      document.getElementById('fire1-discard-container').style.display = 'block';
+      container.style.display = 'block';
 
-      // Wait for discard confirmation button to be pressed to continue
       const checkDiscardConfirmed = setInterval(() => {
         if (!gameState.fire1DiscardMode) {
           clearInterval(checkDiscardConfirmed);
-          document.getElementById('fire1-discard-container').style.display = 'none';
+          container.style.display = 'none';
 
-          // Enter delete selection mode
           gameState.deleteSelectionMode = true;
           alert("Select a card on the board to delete.");
           resolve();
