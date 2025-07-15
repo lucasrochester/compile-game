@@ -1,3 +1,5 @@
+import { structuredEffects } from './structuredEffects.js';
+
 let allCardsData = null;
 
 const protocolColors = {
@@ -7,6 +9,14 @@ const protocolColors = {
   Speed: 'white',
   Gravity: 'pink',
   Darkness: 'darkslategray',
+  Love: 'lightpink',
+  Hate: 'red',
+  Death: 'gray',
+  Apathy: 'lightgray',
+  Metal: 'darkgray',
+  Plague: 'darkgreen',
+  Spirit: 'darkblue',
+  Fire: 'orange',
 };
 
 const gameState = {
@@ -41,7 +51,7 @@ const gameState = {
 let selectedCardIndex = null;
 let selectedCardFaceUp = false;
 
-fetch('/data/cards.json')
+fetch('cards.json')
   .then(res => res.json())
   .then(data => {
     allCardsData = data;
@@ -65,7 +75,7 @@ function initializeGame() {
     player.protocols.forEach(protocol => {
       const protocolCards = allCardsData.protocols[protocol]?.cards || [];
       protocolCards.forEach(cardData => {
-        const card = {...cardData, protocolColor: protocolColors[protocol], faceUp: false};
+        const card = {...cardData, protocolColor: protocolColors[protocol], faceUp: false, inPlay: false, isCovered: false};
         player.deck.push(card);
       });
     });
@@ -90,57 +100,6 @@ function initializeGame() {
   setupDiscardConfirmButton();
 }
 
-function setupLineClickDelegation() {
-  ['player1', 'player2'].forEach(pidStr => {
-    const playerId = parseInt(pidStr.replace('player', ''));
-    const container = document.querySelector(`#${pidStr} .lines`);
-    container.addEventListener('click', (e) => {
-      if (gameState.cacheDiscardMode) {
-        alert("You must discard cards before continuing!");
-        return;
-      }
-      if (gameState.actionTaken) {
-        alert("You already took an action this turn!");
-        return;
-      }
-      if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
-        alert("You must compile your protocol this turn; no other actions allowed.");
-        return;
-      }
-      if (gameState.compileSelectionMode) {
-        alert("Please select a protocol to compile first.");
-        return;
-      }
-      if (playerId !== gameState.currentPlayer) {
-        alert(`It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.`);
-        return;
-      }
-      let lineDiv = e.target;
-      while (lineDiv && !lineDiv.classList.contains('line')) {
-        lineDiv = lineDiv.parentElement;
-      }
-      if (!lineDiv) return;
-
-      const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
-      if (isNaN(lineIndex)) return;
-
-      if (selectedCardIndex === null) {
-        alert('No card selected to play!');
-        return;
-      }
-
-      playCardOnLine(playerId, selectedCardIndex, lineIndex);
-      selectedCardIndex = null;
-      selectedCardFaceUp = false;
-      updateFlipToggleButton();
-
-      renderGameBoard();
-      renderHand();
-      updateButtonsState();
-    });
-  });
-}
-
 function drawCard(playerId) {
   const player = gameState.players[playerId];
   if (player.deck.length === 0) {
@@ -162,7 +121,6 @@ function refreshHand(playerId) {
 }
 
 function startTurn() {
-  console.log('Starting turn for player', gameState.currentPlayer);
   gameState.controlComponent = false;
   gameState.phase = 'start';
   gameState.actionTaken = false;
@@ -172,6 +130,7 @@ function startTurn() {
   gameState.compileEligibleLines = [];
   updateTurnUI();
 
+  // Forced compile check
   const mustCompileLine = gameState.mustCompileLineNextTurn[gameState.currentPlayer];
   if (mustCompileLine !== null) {
     const playerId = gameState.currentPlayer;
@@ -201,6 +160,7 @@ function runPhase() {
     case 'action': actionPhase(); break;
     case 'cache': cachePhase(); break;
     case 'end': endPhase(); break;
+    default: console.error('Unknown phase:', gameState.phase);
   }
 }
 
@@ -217,22 +177,22 @@ function nextPhase() {
 }
 
 function startPhase() {
-  console.log('Start phase');
-  triggerEffects('Start');
+  triggerEffects('topEffect');
   gameState.phase = 'control';
   runPhase();
 }
 
 function checkControlPhase() {
-  console.log('Control phase');
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
+
   let controlCount = 0;
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
     if (playerValue > opponentValue) controlCount++;
   }
+
   gameState.controlComponent = controlCount >= 2;
   updateButtonsState();
   gameState.phase = 'compile';
@@ -240,12 +200,11 @@ function checkControlPhase() {
 }
 
 function checkCompilePhase() {
-  console.log('Compile phase');
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
 
   if (gameState.compileSelectionMode) {
-    // Already waiting on player to pick — do nothing
+    // Waiting for player to choose which protocol to compile
     return;
   }
 
@@ -309,16 +268,13 @@ function forcedCompilePhase() {
 }
 
 function actionPhase() {
-  console.log('Action phase');
   updateButtonsState();
-  // Wait for player input — actions handled by UI event handlers
+  // Wait for player input handled by UI event handlers
 }
 
 function cachePhase() {
-  console.log('Cache phase');
   const player = gameState.players[gameState.currentPlayer];
-  const handSize = player.hand.length;
-  if (handSize <= 5) {
+  if (player.hand.length <= 5) {
     gameState.phase = 'end';
     runPhase();
     return;
@@ -335,8 +291,7 @@ function cachePhase() {
 }
 
 function endPhase() {
-  console.log('End phase');
-  triggerEffects('End');
+  triggerEffects('bottomEffect');
 
   gameState.cacheDiscardMode = false;
   document.getElementById('discard-confirm-container').style.display = 'none';
@@ -357,8 +312,6 @@ function endPhase() {
 }
 
 function compileProtocol(playerId, lineIndex) {
-  console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
-
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
   gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
   gameState.players[1].lines[lineIndex] = [];
@@ -377,26 +330,153 @@ function compileProtocol(playerId, lineIndex) {
 
   if (gameState.compiledProtocols[playerId].length === 3) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
-    // TODO: add game end logic here
+    // TODO: add proper game end handling
   }
 
   gameState.phase = 'cache';
   runPhase();
 }
 
-function triggerEffects(phase) {
-  // TODO: Implement start/end effects here
+async function executeCardEffect(card, phase, playerId) {
+  if (!card.faceUp) return;
+  if (!card.inPlay) return;
+
+  const effectsForCard = structuredEffects[card.name];
+  if (!effectsForCard) {
+    return;
+  }
+
+  const effects = effectsForCard[phase];
+  if (!effects || effects.length === 0) return;
+
+  for (const effect of effects) {
+    await executeEffect(effect, playerId, card);
+  }
 }
 
-function updateButtonsState() {
-  const refreshBtn = document.getElementById('refresh-button');
+async function executeEffect(effect, playerId, sourceCard) {
+  switch (effect.action) {
+    case 'draw':
+      drawCards(playerId, effect.amount);
+      break;
 
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode) {
-    refreshBtn.disabled = true;
-  } else {
-    const hand = gameState.players[gameState.currentPlayer].hand;
-    refreshBtn.disabled = hand.length >= 5 || gameState.actionTaken;
+    case 'flip':
+      const targets = getTargetCards(playerId, effect, sourceCard);
+      for (const card of targets) {
+        if (!card.faceUp) {
+          card.faceUp = true;
+          await executeCardEffect(card, 'middleEffect', playerId);
+        }
+      }
+      break;
+
+    case 'flipSelf':
+      if (!sourceCard.faceUp) {
+        sourceCard.faceUp = true;
+        await executeCardEffect(sourceCard, 'middleEffect', playerId);
+      }
+      break;
+
+    case 'conditionalOnCovered':
+      if (sourceCard.isCovered) {
+        for (const subEffect of effect.effects) {
+          await executeEffect(subEffect, playerId, sourceCard);
+        }
+      }
+      break;
+
+    // Add all other effect cases here based on structuredEffects definitions
+
+    default:
+      console.warn(`Unknown effect action: ${effect.action}`);
   }
+}
+
+function drawCards(playerId, amount) {
+  for (let i = 0; i < amount; i++) {
+    drawCard(playerId);
+  }
+  renderHand();
+}
+
+function getTargetCards(playerId, effect, sourceCard) {
+  const players = effect.targetPlayer === 'self' ? [playerId] :
+                  effect.targetPlayer === 'opponent' ? [playerId === 1 ? 2 : 1] :
+                  [1, 2];
+
+  let cards = [];
+  players.forEach(pid => {
+    if (effect.targetLocation === 'hand') {
+      cards = cards.concat(gameState.players[pid].hand.filter(c => {
+        if (effect.targetCardState === 'faceDown') return !c.faceUp;
+        if (effect.targetCardState === 'faceUp') return c.faceUp;
+        return true;
+      }));
+    } else if (effect.targetLocation === 'field') {
+      gameState.players[pid].lines.forEach(line => {
+        cards = cards.concat(line.filter(c => {
+          if (effect.targetCardState === 'faceDown') return !c.faceUp;
+          if (effect.targetCardState === 'faceUp') return c.faceUp;
+          return true;
+        }));
+      });
+    }
+  });
+  return cards.slice(0, effect.amount || 1);
+}
+
+function renderGameBoard() {
+  ['player1', 'player2'].forEach(pidStr => {
+    const playerId = parseInt(pidStr.replace('player', ''));
+    const playerDiv = document.getElementById(pidStr);
+    const lines = playerDiv.querySelectorAll('.line');
+
+    lines.forEach((lineDiv, idx) => {
+      lineDiv.innerHTML = '';
+
+      const protocolNameDiv = document.createElement('div');
+      protocolNameDiv.classList.add('protocol-name');
+      const protocolName = gameState.players[playerId].protocols[idx];
+      const compiled = gameState.compiledProtocols[playerId].includes(protocolName);
+      protocolNameDiv.textContent = compiled ? `${protocolName} (Compiled)` : protocolName;
+      const protocolColor = protocolColors[protocolName] || 'gray';
+      protocolNameDiv.style.color = protocolColor;
+      lineDiv.appendChild(protocolNameDiv);
+
+      const cards = gameState.players[playerId].lines[idx];
+
+      cards.forEach((card, i) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.classList.add('card');
+
+        if (!card.faceUp) cardDiv.classList.add('face-down');
+
+        if (i < cards.length - 1) cardDiv.classList.add('covered');
+
+        cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
+        cardDiv.style.top = `${i * 80}px`;
+        cardDiv.style.zIndex = i + 1;
+        cardDiv.style.left = '0';
+
+        if (cardDiv.classList.contains('covered') && !card.faceUp) {
+          cardDiv.innerHTML = '';
+        } else {
+          cardDiv.innerHTML = `
+            <div class="card-section card-name">${card.name} (${card.value})</div>
+            <div class="card-section card-top">${card.topEffect || ''}</div>
+            <div class="card-section card-middle">${card.middleEffect || ''}</div>
+            <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
+          `;
+        }
+
+        lineDiv.appendChild(cardDiv);
+      });
+
+      const protocol = gameState.players[playerId].protocols[idx];
+      const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
+      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode) ? 'pointer' : 'default';
+    });
+  });
 }
 
 function renderHand() {
@@ -483,7 +563,7 @@ function renderHand() {
   updateRefreshButton();
 }
 
-function playCardOnLine(playerId, handIndex, lineIndex) {
+function playCardOnLine(playerId, handIndex, lineIndex, faceUp) {
   if (gameState.cacheDiscardMode) {
     alert("You must discard cards before continuing!");
     return;
@@ -515,15 +595,18 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   const cardProtocol = card.name.split(' ')[0];
   const lineProtocol = protocol;
 
-  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
+  if (faceUp && cardProtocol !== lineProtocol) {
     alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
     return;
   }
 
   const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  removedCard.faceUp = selectedCardFaceUp;
+  removedCard.faceUp = faceUp;
+  removedCard.inPlay = true;
+  removedCard.isCovered = false;
 
   gameState.players[playerId].lines[lineIndex].push(removedCard);
+  updateCoverageForLine(playerId, lineIndex);
 
   selectedCardIndex = null;
   selectedCardFaceUp = false;
@@ -535,10 +618,21 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
+  if (faceUp) {
+    executeCardEffect(removedCard, 'middleEffect', playerId);
+  }
+
   setTimeout(() => {
     gameState.phase = 'cache';
     runPhase();
   }, 100);
+}
+
+function updateCoverageForLine(playerId, lineIndex) {
+  const cards = gameState.players[playerId].lines[lineIndex];
+  for (let i = 0; i < cards.length; i++) {
+    cards[i].isCovered = i < cards.length - 1;
+  }
 }
 
 document.getElementById('refresh-button').addEventListener('click', () => {
@@ -619,19 +713,6 @@ function updateDiscardConfirmButton() {
   btn.disabled = selectedCount !== requiredDiscardCount;
 }
 
-function lineTotalValue(playerId, lineIndex) {
-  const cards = gameState.players[playerId].lines[lineIndex];
-  return cards.reduce((sum, card) => {
-    if (card.faceUp) return sum + card.value;
-    else return sum + 2;
-  }, 0);
-}
-
-function updateFlipToggleButton() {
-  const btn = document.getElementById('flip-toggle-button');
-  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
-}
-
 function setupFlipToggle() {
   const btn = document.getElementById('flip-toggle-button');
   btn.addEventListener('click', () => {
@@ -646,68 +727,74 @@ function setupFlipToggle() {
   });
 }
 
-function updateRefreshButton() {
-  const btn = document.getElementById('refresh-button');
+function updateFlipToggleButton() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
+}
+
+function setupLineClickDelegation() {
+  ['player1', 'player2'].forEach(pidStr => {
+    const playerId = parseInt(pidStr.replace('player', ''));
+    const container = document.querySelector(`#${pidStr} .lines`);
+    container.addEventListener('click', async (e) => {
+      if (gameState.cacheDiscardMode) {
+        alert("You must discard cards before continuing!");
+        return;
+      }
+      if (gameState.actionTaken) {
+        alert("You already took an action this turn!");
+        return;
+      }
+      if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+        alert("You must compile your protocol this turn; no other actions allowed.");
+        return;
+      }
+      if (gameState.compileSelectionMode) {
+        alert("Please select a protocol to compile first.");
+        return;
+      }
+      if (playerId !== gameState.currentPlayer) {
+        alert(`It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.`);
+        return;
+      }
+      let lineDiv = e.target;
+      while (lineDiv && !lineDiv.classList.contains('line')) {
+        lineDiv = lineDiv.parentElement;
+      }
+      if (!lineDiv) return;
+      const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
+      if (isNaN(lineIndex)) return;
+      if (selectedCardIndex === null) {
+        alert('No card selected to play!');
+        return;
+      }
+      await playCardOnLine(playerId, selectedCardIndex, lineIndex, selectedCardFaceUp);
+      selectedCardIndex = null;
+      selectedCardFaceUp = false;
+      updateFlipToggleButton();
+      renderGameBoard();
+      renderHand();
+      updateButtonsState();
+    });
+  });
+}
+
+function updateButtonsState() {
+  const refreshBtn = document.getElementById('refresh-button');
   if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode) {
-    btn.disabled = true;
+    refreshBtn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
-    btn.disabled = hand.length >= 5 || gameState.actionTaken;
+    refreshBtn.disabled = hand.length >= 5 || gameState.actionTaken;
   }
 }
 
-function renderGameBoard() {
-  ['player1', 'player2'].forEach(pidStr => {
-    const playerId = parseInt(pidStr.replace('player', ''));
-    const playerDiv = document.getElementById(pidStr);
-    const lines = playerDiv.querySelectorAll('.line');
-
-    lines.forEach((lineDiv, idx) => {
-      lineDiv.innerHTML = '';
-
-      const protocolNameDiv = document.createElement('div');
-      protocolNameDiv.classList.add('protocol-name');
-      const protocolName = gameState.players[playerId].protocols[idx];
-      const compiled = gameState.compiledProtocols[playerId].includes(protocolName);
-      protocolNameDiv.textContent = compiled ? `${protocolName} (Compiled)` : protocolName;
-      const protocolColor = protocolColors[protocolName] || 'gray';
-      protocolNameDiv.style.color = protocolColor;
-      lineDiv.appendChild(protocolNameDiv);
-
-      const cards = gameState.players[playerId].lines[idx];
-
-      cards.forEach((card, i) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.classList.add('card');
-
-        if (!card.faceUp) cardDiv.classList.add('face-down');
-
-        if (i < cards.length - 1) cardDiv.classList.add('covered');
-
-        cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
-        cardDiv.style.top = `${i * 80}px`;
-        cardDiv.style.zIndex = i + 1;
-        cardDiv.style.left = '0';
-
-        if (cardDiv.classList.contains('covered') && !card.faceUp) {
-          cardDiv.innerHTML = '';
-        } else {
-          cardDiv.innerHTML = `
-            <div class="card-section card-name">${card.name} (${card.value})</div>
-            <div class="card-section card-top">${card.topEffect || ''}</div>
-            <div class="card-section card-middle">${card.middleEffect || ''}</div>
-            <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
-          `;
-        }
-
-        lineDiv.appendChild(cardDiv);
-      });
-
-      const protocol = gameState.players[playerId].protocols[idx];
-      const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
-      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode) ? 'pointer' : 'default';
-    });
-  });
+function lineTotalValue(playerId, lineIndex) {
+  const cards = gameState.players[playerId].lines[lineIndex];
+  return cards.reduce((sum, card) => {
+    if (card.faceUp) return sum + card.value;
+    else return sum + 2;
+  }, 0);
 }
 
 function updateTurnUI() {
@@ -730,3 +817,4 @@ function updateTurnUI() {
   renderGameBoard();
   updateButtonsState();
 }
+
