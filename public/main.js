@@ -40,6 +40,8 @@ const gameState = {
   deleteSelectionMode: false,
   fire1DiscardMode: false,
   fire1DiscardSelectedIndex: null,
+  fire1EffectResolving: false,
+  fire1EffectCard: null,
 };
 
 let selectedCardIndex = null;
@@ -155,7 +157,6 @@ function setupLineClickDelegation() {
         alert("You must discard cards before continuing!");
         return;
       }
-      // Removed alert "You already took an action this turn!" here; silently ignore if actionTaken
       if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
         return;
       }
@@ -413,8 +414,13 @@ function endPhase() {
   renderHand();
   updateButtonsState();
 
+  // Switch turn AFTER a small delay so UI updates first
   setTimeout(() => {
     gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+
+    // Reset actionTaken for new turn
+    gameState.actionTaken = false;
+
     startTurn();
   }, 500);
 }
@@ -561,7 +567,6 @@ function renderHand() {
           alert("Please select a protocol to compile first.");
           return;
         }
-        // Removed alert "You already took an action this turn!" here - silently ignore multiple selection attempts
         if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
           return;
         }
@@ -587,7 +592,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
     alert("It's not this player's turn!");
     return;
   }
-  // Removed alert "You already took an action this turn!" here - silently ignore
   if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
     return;
   }
@@ -615,7 +619,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
     return;
   }
 
-  // Mark that player has taken their action first
   gameState.actionTaken = true;
 
   const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
@@ -631,10 +634,8 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
-  // Special Fire 1 effect handling:
   if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
     await handleFire1Effect(removedCard, playerId);
-    // End phase handled in handleFire1Effect
   } else {
     setTimeout(() => {
       gameState.phase = 'cache';
@@ -648,7 +649,6 @@ document.getElementById('refresh-button').addEventListener('click', () => {
     alert("You must discard cards before continuing!");
     return;
   }
-  // Removed alert "You already took an action this turn!" here - silently ignore
   if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
     return;
   }
@@ -851,13 +851,11 @@ function renderGameBoard() {
           cardDiv.style.cursor = 'pointer';
           cardDiv.classList.add('delete-selectable');
 
-          // Only allow clicks on top card in delete mode
           if (i === cards.length -1) {
             cardDiv.onclick = () => {
               handleDeleteSelection(playerId, idx, i, card);
             };
           } else {
-            // Disable clicking covered cards in delete mode
             cardDiv.onclick = () => {
               alert("You can only delete the top card of a stack.");
             };
@@ -930,13 +928,30 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   gameState.players[ownerId].discard.push(card);
   alert(`Deleted card: ${card.name}`);
 
+  // If Fire 1 discard or delete mode is active, finish Fire 1 effect here
+  if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
+    gameState.deleteSelectionMode = false;
+    gameState.fire1DiscardMode = false;
+    gameState.fire1EffectResolving = false;
+    gameState.fire1EffectCard = null;
+    gameState.actionTaken = true;
+
+    renderGameBoard();
+    renderHand();
+    updateButtonsState();
+
+    gameState.phase = 'end';
+    runPhase();
+    return;
+  }
+
+  // Normal flow for deletes outside Fire 1 effect
   gameState.deleteSelectionMode = false;
 
   renderGameBoard();
   renderHand();
   updateButtonsState();
 
-  // After deletion, proceed to cache phase (or next as needed)
   gameState.phase = 'cache';
   runPhase();
 }
@@ -945,6 +960,9 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
 
 async function handleFire1Effect(card, playerId) {
   return new Promise((resolve) => {
+    gameState.fire1EffectResolving = true;
+    gameState.fire1EffectCard = card;
+
     showCardPopup(card);
 
     gameState._fire1AfterPopupResolve = () => {
@@ -973,17 +991,17 @@ async function handleFire1Effect(card, playerId) {
       handleDeleteSelection = function(playerId, lineIndex, cardIndex, card) {
         originalHandleDeleteSelection(playerId, lineIndex, cardIndex, card);
         if (!gameState.deleteSelectionMode && !gameState.fire1DiscardMode) {
-          // Effect fully resolved after deletion
           finishFire1Effect();
           resolve();
-          // Restore original handler to avoid patch stacking
           handleDeleteSelection = originalHandleDeleteSelection;
         }
       };
 
       function finishFire1Effect() {
-        gameState.actionTaken = true;  // lock further actions this turn
-        gameState.phase = 'end';        // go to end phase (switch player next)
+        gameState.fire1EffectResolving = false;
+        gameState.fire1EffectCard = null;
+        gameState.actionTaken = true;
+        gameState.phase = 'end';
         runPhase();
       }
     };
