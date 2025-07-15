@@ -58,9 +58,9 @@ function showCardPopup(card) {
 
   nameEl.textContent = card.name;
   textEl.textContent = 
-    (card.topEffect ? Top Effect:\n${card.topEffect}\n\n : '') +
-    (card.middleEffect ? Middle Effect:\n${card.middleEffect}\n\n : '') +
-    (card.bottomEffect ? Bottom Effect:\n${card.bottomEffect} : '');
+    (card.topEffect ? `Top Effect:\n${card.topEffect}\n\n` : '') +
+    (card.middleEffect ? `Middle Effect:\n${card.middleEffect}\n\n` : '') +
+    (card.bottomEffect ? `Bottom Effect:\n${card.bottomEffect}` : '');
 
   ackCountEl.textContent = cardPopupAckCount;
 
@@ -153,7 +153,7 @@ function initializeGame() {
 function setupLineClickDelegation() {
   ['player1', 'player2'].forEach(pidStr => {
     const playerId = parseInt(pidStr.replace('player', ''));
-    const container = document.querySelector(#${pidStr} .lines);
+    const container = document.querySelector(`#${pidStr} .lines`);
     container.addEventListener('click', async (e) => {
       if (gameState.cacheDiscardMode) {
         alert("You must discard cards before continuing!");
@@ -180,7 +180,7 @@ function setupLineClickDelegation() {
         return;
       }
       if (playerId !== gameState.currentPlayer) {
-        alert(It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.);
+        alert(`It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.`);
         return;
       }
       let lineDiv = e.target;
@@ -252,7 +252,7 @@ function startTurn() {
     const opponentValue = lineTotalValue(opponentId, mustCompileLine);
 
     if (playerValue >= 10 && playerValue > opponentValue) {
-      alert(You must compile protocol "${gameState.players[playerId].protocols[mustCompileLine]}" this turn!);
+      alert(`You must compile protocol "${gameState.players[playerId].protocols[mustCompileLine]}" this turn!`);
       gameState.phase = 'compileForced';
       runPhase();
       return;
@@ -335,7 +335,7 @@ function checkCompilePhase() {
     gameState.phase = 'action';
     runPhase();
   } else if (eligibleLines.length === 1) {
-    alert(Auto-compiling protocol "${gameState.players[playerId].protocols[eligibleLines[0]]}");
+    alert(`Auto-compiling protocol "${gameState.players[playerId].protocols[eligibleLines[0]]}"`);
     compileProtocol(playerId, eligibleLines[0]);
   } else {
     gameState.compileSelectionMode = true;
@@ -350,7 +350,7 @@ function promptCompileSelection(playerId, lines) {
 
   let message = 'Multiple protocols qualify for compilation. Choose one:\n';
   lines.forEach(line => {
-    message += ${line}: ${gameState.players[playerId].protocols[line]}\n;
+    message += `${line}: ${gameState.players[playerId].protocols[line]}\n`;
   });
 
   let choice = null;
@@ -428,7 +428,7 @@ function endPhase() {
 }
 
 function compileProtocol(playerId, lineIndex) {
-  console.log(Compiling protocol on line ${lineIndex} for player ${playerId});
+  console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
 
   // Move all cards in line to discard piles
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
@@ -441,9 +441,9 @@ function compileProtocol(playerId, lineIndex) {
 
   if (!hasCompiledBefore) {
     gameState.compiledProtocols[playerId].push(protocol);
-    alert(Player ${playerId} compiled protocol ${protocol}!);
+    alert(`Player ${playerId} compiled protocol ${protocol}!`);
   } else {
-    alert(Player ${playerId} recompiled protocol ${protocol}! Drawing 1 card from opponent's deck.);
+    alert(`Player ${playerId} recompiled protocol ${protocol}! Drawing 1 card from opponent's deck.`);
     // Draw 1 card from opponent's deck
     const opponentId = playerId === 1 ? 2 : 1;
     const opponent = gameState.players[opponentId];
@@ -455,7 +455,7 @@ function compileProtocol(playerId, lineIndex) {
       const drawnCard = opponent.deck.pop();
       drawnCard.faceUp = true;
       gameState.players[playerId].hand.push(drawnCard);
-      alert(Player ${playerId} drew "${drawnCard.name}" from opponent's deck.);
+      alert(`Player ${playerId} drew "${drawnCard.name}" from opponent's deck.`);
     } else {
       alert("Opponent's deck is empty, no card drawn.");
     }
@@ -466,7 +466,7 @@ function compileProtocol(playerId, lineIndex) {
   renderHand();
 
   if (gameState.compiledProtocols[playerId].length === 3) {
-    alert(Player ${playerId} wins by compiling all protocols!);
+    alert(`Player ${playerId} wins by compiling all protocols!`);
     // TODO: add game end logic here
   }
 
@@ -540,12 +540,12 @@ function renderHand() {
 
     cardDiv.style.background = isSelected ? '#555' : '#444';
 
-    cardDiv.innerHTML = 
+    cardDiv.innerHTML = `
       <div class="card-section card-name">${card.name} (${card.value})</div>
       <div class="card-section card-top">${card.topEffect || ''}</div>
       <div class="card-section card-middle">${card.middleEffect || ''}</div>
       <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
-    ;
+    `;
 
     cardDiv.addEventListener('click', async () => {
       if (gameState.cacheDiscardMode) {
@@ -626,7 +626,7 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   const lineProtocol = protocol;
 
   if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
-    alert(Face-up cards must be played on their protocol line: ${lineProtocol});
+    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
     return;
   }
 
@@ -706,7 +706,7 @@ function setupDiscardConfirmButton() {
     const requiredDiscardCount = player.hand.length - 5;
 
     if (gameState.cacheDiscardSelectedIndices.size !== requiredDiscardCount) {
-      alert(Please select exactly ${requiredDiscardCount} cards to discard.);
+      alert(`Please select exactly ${requiredDiscardCount} cards to discard.`);
       return;
     }
 
@@ -743,7 +743,7 @@ function setupFire1DiscardConfirmButton() {
       const player = gameState.players[gameState.currentPlayer];
       const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
       player.discard.push(discardedCard);
-      alert(Discarded card: ${discardedCard.name});
+      alert(`Discarded card: ${discardedCard.name}`);
 
       // End discard mode and start delete mode
       gameState.fire1DiscardMode = false;
@@ -787,7 +787,7 @@ function setupFire1DiscardConfirmUI() {
       const player = gameState.players[gameState.currentPlayer];
       const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
       player.discard.push(discardedCard);
-      alert(Discarded card: ${discardedCard.name});
+      alert(`Discarded card: ${discardedCard.name}`);
 
       // End discard mode and start delete mode
       gameState.fire1DiscardMode = false;
@@ -807,14 +807,14 @@ function updateDiscardInstruction() {
   if (gameState.fire1DiscardMode) {
     const player = gameState.players[gameState.currentPlayer];
     const instructionDiv = document.getElementById('discard-instruction');
-    instructionDiv.textContent = Select 1 card from your hand to discard for Fire 1 effect.;
+    instructionDiv.textContent = `Select 1 card from your hand to discard for Fire 1 effect.`;
   } else {
     const player = gameState.players[gameState.currentPlayer];
     const requiredDiscardCount = player.hand.length - 5;
     const selectedCount = gameState.cacheDiscardSelectedIndices.size;
     const instructionDiv = document.getElementById('discard-instruction');
 
-    instructionDiv.textContent = Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount};
+    instructionDiv.textContent = `Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount}`;
   }
 }
 
@@ -892,7 +892,7 @@ function renderGameBoard() {
       protocolNameDiv.classList.add('protocol-name');
       const protocolName = gameState.players[playerId].protocols[idx];
       const compiled = gameState.compiledProtocols[playerId].includes(protocolName);
-      protocolNameDiv.textContent = compiled ? ${protocolName} (Compiled) : protocolName;
+      protocolNameDiv.textContent = compiled ? `${protocolName} (Compiled)` : protocolName;
       const protocolColor = protocolColors[protocolName] || 'gray';
       protocolNameDiv.style.color = protocolColor;
       lineDiv.appendChild(protocolNameDiv);
@@ -908,7 +908,7 @@ function renderGameBoard() {
         if (i < cards.length - 1) cardDiv.classList.add('covered');
 
         cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
-        cardDiv.style.top = ${i * 80}px;
+        cardDiv.style.top = `${i * 80}px`;
         cardDiv.style.zIndex = i + 1;
         cardDiv.style.left = '0';
 
@@ -927,12 +927,12 @@ function renderGameBoard() {
         if (cardDiv.classList.contains('covered') && !card.faceUp) {
           cardDiv.innerHTML = '';
         } else {
-          cardDiv.innerHTML = 
+          cardDiv.innerHTML = `
             <div class="card-section card-name">${card.name} (${card.value})</div>
             <div class="card-section card-top">${card.topEffect || ''}</div>
             <div class="card-section card-middle">${card.middleEffect || ''}</div>
             <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
-          ;
+          `;
         }
 
         lineDiv.appendChild(cardDiv);
@@ -955,7 +955,7 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
 
   gameState.players[ownerId].lines[lineIndex].splice(cardIndex, 1);
   gameState.players[ownerId].discard.push(card);
-  alert(Deleted card: ${card.name});
+  alert(`Deleted card: ${card.name}`);
 
   gameState.deleteSelectionMode = false;
 
@@ -1024,7 +1024,7 @@ function updateTurnUI() {
     p1.classList.remove('current-turn');
   }
 
-  document.getElementById('turn-indicator').textContent = Current Turn: Player ${gameState.currentPlayer};
+  document.getElementById('turn-indicator').textContent = `Current Turn: Player ${gameState.currentPlayer}`;
 
   renderHand();
   renderGameBoard();
