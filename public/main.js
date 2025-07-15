@@ -114,27 +114,26 @@ function initializeGame() {
     player.hand = [];
     player.discard = [];
 
+    // Remove all Fire 1 cards from deck to avoid duplicates
+    player.deck = player.deck.filter(c => c.name !== 'Fire 1');
+
+    // For player 1, add exactly one Fire 1 card to hand
+    if (pid === 1) {
+      player.hand.push({
+        name: 'Fire 1',
+        value: 1,
+        protocolColor: protocolColors['Fire'],
+        faceUp: false,
+        topEffect: '',
+        middleEffect: 'Discard 1 card. If you do, delete 1 card.',
+        bottomEffect: '',
+      });
+    }
+
+    // Then draw initial cards (4 for Player 1, 5 for Player 2)
     const cardsToDraw = (pid === 1) ? 4 : 5;
     for (let i = 0; i < cardsToDraw && player.deck.length > 0; i++) {
       drawCard(pid);
-    }
-
-    if (pid === 1) {
-      let fireOneIndex = player.deck.findIndex(c => c.name === 'Fire 1');
-      if (fireOneIndex !== -1) {
-        const fireOneCard = player.deck.splice(fireOneIndex, 1)[0];
-        player.hand.push(fireOneCard);
-      } else {
-        player.hand.push({
-          name: 'Fire 1',
-          value: 1,
-          protocolColor: protocolColors['Fire'],
-          faceUp: false,
-          topEffect: '',
-          middleEffect: 'Discard 1 card. If you do, delete 1 card.',
-          bottomEffect: '',
-        });
-      }
     }
   });
 
@@ -629,6 +628,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   selectedCardFaceUp = false;
   updateFlipToggleButton();
 
+  // Mark that player has taken their action
   gameState.actionTaken = true;
 
   renderGameBoard();
@@ -725,8 +725,6 @@ function setupFire1DiscardConfirmButton() {
         alert("Please select a card to discard.");
         return;
       }
-      console.log('Fire1 discard confirmed for card index:', gameState.fire1DiscardSelectedIndex);
-
       const player = gameState.players[gameState.currentPlayer];
       const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
       player.discard.push(discardedCard);
@@ -734,6 +732,7 @@ function setupFire1DiscardConfirmButton() {
 
       gameState.fire1DiscardMode = false;
       gameState.fire1DiscardSelectedIndex = null;
+      document.getElementById('fire1-discard-container').style.display = 'none';
 
       renderHand();
       updateButtonsState();
@@ -973,20 +972,17 @@ async function handleFire1Effect(card, playerId) {
       if (container) container.style.display = 'block';
       else setupFire1DiscardConfirmUI();
 
-      // Wait for discard and then deletion to finish
-      // Resolve promise in handleDeleteSelection after deletion completes
-    };
-
-    // Patch handleDeleteSelection to resolve promise when deletion finishes
-    const originalHandleDeleteSelection = handleDeleteSelection;
-    handleDeleteSelection = function(playerId, lineIndex, cardIndex, card) {
-      originalHandleDeleteSelection(playerId, lineIndex, cardIndex, card);
-      if (!gameState.deleteSelectionMode && !gameState.fire1DiscardMode) {
-        // Effect fully resolved after deletion
-        resolve();
-        // Restore original handler to avoid patch stacking
-        handleDeleteSelection = originalHandleDeleteSelection;
-      }
+      // Patch handleDeleteSelection to resolve promise after deletion finishes
+      const originalHandleDeleteSelection = handleDeleteSelection;
+      handleDeleteSelection = function(playerId, lineIndex, cardIndex, card) {
+        originalHandleDeleteSelection(playerId, lineIndex, cardIndex, card);
+        if (!gameState.deleteSelectionMode && !gameState.fire1DiscardMode) {
+          // Effect fully resolved after deletion
+          resolve();
+          // Restore original handler to avoid patch stacking
+          handleDeleteSelection = originalHandleDeleteSelection;
+        }
+      };
     };
   });
 }
