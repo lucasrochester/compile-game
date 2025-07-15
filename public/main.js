@@ -153,11 +153,12 @@ function setupLineClickDelegation() {
     const playerId = parseInt(pidStr.replace('player', ''));
     const container = document.querySelector(`#${pidStr} .lines`);
     container.addEventListener('click', async (e) => {
-      if (gameState.cacheDiscardMode) {
-        alert("You must discard cards before continuing!");
+      if (gameState.cacheDiscardMode || gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
+        alert("Cannot play cards during special effect selection.");
         return;
       }
-      if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
+      if (gameState.actionTaken) {
+        alert("You already took an action this turn!");
         return;
       }
       if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
@@ -166,10 +167,6 @@ function setupLineClickDelegation() {
       }
       if (gameState.compileSelectionMode) {
         alert("Please select a protocol to compile first.");
-        return;
-      }
-      if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
-        alert("Cannot play cards during special effect selection.");
         return;
       }
       if (playerId !== gameState.currentPlayer) {
@@ -559,15 +556,15 @@ function renderHand() {
         updateDiscardInstruction();
         renderHand();
       } else {
+        if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
+          return;
+        }
         if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
           alert("You must compile your protocol this turn; no other actions allowed.");
           return;
         }
         if (gameState.compileSelectionMode) {
           alert("Please select a protocol to compile first.");
-          return;
-        }
-        if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
           return;
         }
         selectedCardIndex = idx;
@@ -584,15 +581,16 @@ function renderHand() {
 }
 
 async function playCardOnLine(playerId, handIndex, lineIndex) {
-  if (gameState.cacheDiscardMode) {
-    alert("You must discard cards before continuing!");
+  if (gameState.cacheDiscardMode || gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
+    alert("Cannot play cards during special effect selection.");
     return;
   }
   if (playerId !== gameState.currentPlayer) {
     alert("It's not this player's turn!");
     return;
   }
-  if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
+  if (gameState.actionTaken) {
+    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[playerId] !== null) {
@@ -601,10 +599,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   }
   if (gameState.compileSelectionMode) {
     alert("Please select a protocol to compile first.");
-    return;
-  }
-  if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
-    alert("Cannot play cards during special effect selection.");
     return;
   }
 
@@ -645,11 +639,12 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
 }
 
 document.getElementById('refresh-button').addEventListener('click', () => {
-  if (gameState.cacheDiscardMode) {
-    alert("You must discard cards before continuing!");
+  if (gameState.cacheDiscardMode || gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
+    alert("Cannot refresh during special effect selection.");
     return;
   }
-  if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
+  if (gameState.actionTaken) {
+    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
@@ -658,10 +653,6 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   }
   if (gameState.compileSelectionMode) {
     alert("Please select a protocol to compile first.");
-    return;
-  }
-  if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
-    alert("Cannot refresh during special effect selection.");
     return;
   }
 
@@ -928,7 +919,7 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   gameState.players[ownerId].discard.push(card);
   alert(`Deleted card: ${card.name}`);
 
-  // If Fire 1 discard or delete mode is active, finish Fire 1 effect here
+  // Fire 1 effect finish condition
   if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
     gameState.deleteSelectionMode = false;
     gameState.fire1DiscardMode = false;
