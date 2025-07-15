@@ -494,6 +494,7 @@ function updateButtonsState() {
 function renderHand() {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
+
   const hand = gameState.players[gameState.currentPlayer].hand;
 
   if (!hand || hand.length === 0) {
@@ -506,25 +507,19 @@ function renderHand() {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('card', 'in-hand');
 
+    const isSelected = idx === selectedCardIndex;
+    const faceUpToShow = isSelected ? selectedCardFaceUp : card.faceUp;
+
+    cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
+
+    // Highlight card if in Fire 1 discard selection mode and this card is selected for discard
     if (gameState.fire1DiscardMode) {
-  cardDiv.style.cursor = 'pointer';
-  if (gameState.fire1DiscardSelectedIndex === idx) {
-    cardDiv.classList.add('discard-select');
-  } else {
-    cardDiv.classList.remove('discard-select');
-  }
-
-  cardDiv.onclick = () => {
-    if (gameState.fire1DiscardSelectedIndex === idx) {
-      gameState.fire1DiscardSelectedIndex = null;
-    } else {
-      gameState.fire1DiscardSelectedIndex = idx;
-    }
-    renderHand();
-    updateDiscardConfirmButton();
-  };
-}
-
+      cardDiv.style.cursor = 'pointer';
+      if (gameState.fire1DiscardSelectedIndex === idx) {
+        cardDiv.classList.add('discard-select');
+      } else {
+        cardDiv.classList.remove('discard-select');
+      }
     } else if (gameState.cacheDiscardMode) {
       cardDiv.style.cursor = 'pointer';
       if (gameState.cacheDiscardSelectedIndices.has(idx)) {
@@ -532,22 +527,46 @@ function renderHand() {
       } else {
         cardDiv.classList.remove('discard-select');
       }
+    } else {
+      cardDiv.style.cursor = 'pointer';
+      cardDiv.classList.remove('discard-select');
+    }
 
-      cardDiv.onclick = () => {
+    if (!faceUpToShow) {
+      cardDiv.classList.add('face-down');
+    } else {
+      cardDiv.classList.remove('face-down');
+    }
+
+    cardDiv.style.background = isSelected ? '#555' : '#444';
+
+    cardDiv.innerHTML = `
+      <div class="card-section card-name">${card.name} (${card.value})</div>
+      <div class="card-section card-top">${card.topEffect || ''}</div>
+      <div class="card-section card-middle">${card.middleEffect || ''}</div>
+      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
+    `;
+
+    cardDiv.addEventListener('click', async () => {
+      if (gameState.cacheDiscardMode) {
+        // Normal cache discard selection
         if (gameState.cacheDiscardSelectedIndices.has(idx)) {
           gameState.cacheDiscardSelectedIndices.delete(idx);
         } else {
           gameState.cacheDiscardSelectedIndices.add(idx);
         }
-        renderHand();
+        updateDiscardInstruction();
         updateDiscardConfirmButton();
-      };
-    } else {
-      cardDiv.style.cursor = 'pointer';
-      cardDiv.classList.remove('discard-select');
-
-      cardDiv.onclick = () => {
-        // Your normal card select logic here (optional)
+        renderHand();
+      } else if (gameState.fire1DiscardMode) {
+        // Fire 1 discard selection
+        if (gameState.fire1DiscardSelectedIndex === idx) {
+          gameState.fire1DiscardSelectedIndex = null;
+        } else {
+          gameState.fire1DiscardSelectedIndex = idx;
+        }
+        renderHand();
+      } else {
         if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
           alert("You must compile your protocol this turn; no other actions allowed.");
           return;
@@ -564,34 +583,14 @@ function renderHand() {
         selectedCardFaceUp = card.faceUp;
         updateFlipToggleButton();
         renderHand();
-      };
-    }
-
-    // Show face up/down as before, style, etc
-    const faceUpToShow = (selectedCardIndex === idx) ? selectedCardFaceUp : card.faceUp;
-    cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
-
-    if (!faceUpToShow) {
-      cardDiv.classList.add('face-down');
-    } else {
-      cardDiv.classList.remove('face-down');
-    }
-
-    cardDiv.style.background = (selectedCardIndex === idx) ? '#555' : '#444';
-
-    cardDiv.innerHTML = `
-      <div class="card-section card-name">${card.name} (${card.value})</div>
-      <div class="card-section card-top">${card.topEffect || ''}</div>
-      <div class="card-section card-middle">${card.middleEffect || ''}</div>
-      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
-    `;
+      }
+    });
 
     handDiv.appendChild(cardDiv);
   });
 
   updateRefreshButton();
 }
-
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode) {
@@ -820,19 +819,13 @@ function updateDiscardInstruction() {
 }
 
 function updateDiscardConfirmButton() {
-  const btn = document.getElementById('fire1-discard-confirm-button');
-  if (!btn) return;
-
   if (gameState.fire1DiscardMode) {
-    btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
-    btn.style.display = 'inline-block';
+    const btn = document.getElementById('fire1-discard-confirm-button');
+    if (btn) {
+      btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
+      btn.style.display = 'inline-block';
+    }
     document.getElementById('discard-confirm-button').style.display = 'none';
-  } else {
-    btn.style.display = 'none';
-    document.getElementById('discard-confirm-button').style.display = 'inline-block';
-  }
-}
-
   } else {
     const player = gameState.players[gameState.currentPlayer];
     const requiredDiscardCount = player.hand.length - 5;
@@ -919,22 +912,17 @@ function renderGameBoard() {
         cardDiv.style.zIndex = i + 1;
         cardDiv.style.left = '0';
 
+        // If in deleteSelectionMode, highlight cards clickable for delete
         if (gameState.deleteSelectionMode) {
-  // Only top card (last in line) is selectable for delete
-  if (i === cards.length - 1) {
-    cardDiv.style.cursor = 'pointer';
-    cardDiv.classList.add('delete-selectable');
-    cardDiv.onclick = () => {
-      handleDeleteSelection(playerId, idx, i, card);
-    };
-  } else {
-    cardDiv.style.cursor = 'default';
-    cardDiv.onclick = null;
-  }
-} else {
-  cardDiv.style.cursor = 'default';
-  cardDiv.onclick = null;
-}
+          cardDiv.style.cursor = 'pointer';
+          cardDiv.classList.add('delete-selectable');
+          cardDiv.onclick = () => {
+            handleDeleteSelection(playerId, idx, i, card);
+          };
+        } else {
+          cardDiv.style.cursor = 'default';
+          cardDiv.onclick = null;
+        }
 
         if (cardDiv.classList.contains('covered') && !card.faceUp) {
           cardDiv.innerHTML = '';
@@ -1046,41 +1034,4 @@ function updateTurnUI() {
 // Call setup for Fire 1 discard confirm button UI when DOM content is ready
 document.addEventListener('DOMContentLoaded', () => {
   setupFire1DiscardConfirmUI();
-});
-
-function updateDiscardConfirmButton() {
-  const btn = document.getElementById('fire1-discard-confirm-button');
-  if (!btn) return;
-
-  if (gameState.fire1DiscardMode) {
-    btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
-    btn.style.display = 'inline-block';
-  } else {
-    btn.style.display = 'none';
-  }
-}
-
-// Setup Fire 1 confirm discard button event
-document.getElementById('fire1-discard-confirm-button').addEventListener('click', () => {
-  if (!gameState.fire1DiscardMode) return;
-  if (gameState.fire1DiscardSelectedIndex === null) {
-    alert('Please select a card to discard.');
-    return;
-  }
-
-  const player = gameState.players[gameState.currentPlayer];
-  const discarded = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
-  player.discard.push(discarded);
-
-  alert(`Discarded: ${discarded.name}`);
-
-  gameState.fire1DiscardMode = false;
-  gameState.fire1DiscardSelectedIndex = null;
-
-  renderHand();
-  updateDiscardConfirmButton();
-
-  // Proceed to next step, e.g., delete card selection or cache phase
-  gameState.deleteSelectionMode = true;
-  alert("Select a card on the board to delete.");
 });
