@@ -1,32 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Minimal Card Render Test</title>
-<style>
-  body { background: #222; color: #eee; font-family: Arial, sans-serif; padding: 20px; }
-  .card { width: 100px; height: 140px; background: #444; border: 2px solid gray; border-radius: 6px; margin: 10px; padding: 8px; color: white; display: inline-block; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compile Game</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <h1>Compile Game</h1>
 
-<div id="hand"></div>
+  <div id="turn-indicator" style="margin-bottom: 20px; font-weight: bold; font-size: 18px; color: #eee;">
+    Current Turn: Player 1
+  </div>
 
-<script>
-  const hand = [
-    { name: 'Life 1', value: 1, protocolColor: 'green', faceUp: true, topEffect: 'Top effect', middleEffect: '', bottomEffect: '' },
-    { name: 'Light 2', value: 2, protocolColor: 'yellow', faceUp: false, topEffect: '', middleEffect: '', bottomEffect: '' }
-  ];
+  <div id="player2" class="player-area">
+    <h2>Player 2</h2>
+    <div class="lines">
+      <div class="line" data-line="0"><div class="protocol-name"></div></div>
+      <div class="line" data-line="1"><div class="protocol-name"></div></div>
+      <div class="line" data-line="2"><div class="protocol-name"></div></div>
+    </div>
+  </div>
 
-  const handDiv = document.getElementById('hand');
-  hand.forEach(card => {
-    const cardDiv = document.createElement('div');
-    cardDiv.classList.add('card');
-    cardDiv.style.borderColor = card.faceUp ? card.protocolColor : 'black';
-    cardDiv.textContent = `${card.name} (${card.value}) ${card.faceUp ? '' : '(Face Down)'}`;
-    handDiv.appendChild(cardDiv);
-  });
-</script>
+  <div id="player1" class="player-area">
+    <h2>Player 1</h2>
+    <div class="lines">
+      <div class="line" data-line="0"><div class="protocol-name"></div></div>
+      <div class="line" data-line="1"><div class="protocol-name"></div></div>
+      <div class="line" data-line="2"><div class="protocol-name"></div></div>
+    </div>
+  </div>
 
+  <div id="hand-container">
+    <h2>Your Hand</h2>
+    <div id="hand"></div>
+    <button id="refresh-button" disabled>Refresh</button>
+  </div>
+
+  <div id="flip-toggle-container" style="margin-top: 10px; color: #eee;">
+    <button id="flip-toggle-button">Flip Card: Face Up</button>
+  </div>
+
+  <!-- Discard confirm button for cache phase (hidden unless in discard mode) -->
+  <div id="discard-confirm-container" style="margin-top:10px; display:none;">
+    <button id="discard-confirm-button" disabled>Confirm Discard</button>
+    <div id="discard-instruction" style="margin-top:5px; font-size:14px; color:#ccc;"></div>
+  </div>
+
+  <script src="main.js"></script>
 </body>
 </html>
