@@ -100,8 +100,42 @@ function setupLineClickDelegation() {
       return;
     }
 
-    const playerId = 1;
-    playCardOnLine(playerId, selectedCardIndex, lineIndex);
+    if (gameState.currentPlayer !== 1) {
+      alert("It's not Player 1's turn!");
+      return;
+    }
+
+    playCardOnLine(1, selectedCardIndex, lineIndex);
+    selectedCardIndex = null;
+    selectedCardFaceUp = false;
+    updateFlipToggleButton();
+    renderGameBoard();
+    renderHand();
+    updateButtonsState();
+  });
+
+  const player2LinesContainer = document.querySelector('#player2 .lines');
+  player2LinesContainer.addEventListener('click', (e) => {
+    let lineDiv = e.target;
+    while (lineDiv && !lineDiv.classList.contains('line')) {
+      lineDiv = lineDiv.parentElement;
+    }
+    if (!lineDiv) return;
+
+    const lineIndex = parseInt(lineDiv.getAttribute('data-line'));
+    if (isNaN(lineIndex)) return;
+
+    if (selectedCardIndex === null) {
+      alert('No card selected to play!');
+      return;
+    }
+
+    if (gameState.currentPlayer !== 2) {
+      alert("It's not Player 2's turn!");
+      return;
+    }
+
+    playCardOnLine(2, selectedCardIndex, lineIndex);
     selectedCardIndex = null;
     selectedCardFaceUp = false;
     updateFlipToggleButton();
@@ -135,7 +169,7 @@ function startTurn() {
   console.log('Starting turn for player', gameState.currentPlayer);
   gameState.controlComponent = false;
   gameState.mustCompileLine = null;
-  updateButtonsState();
+  updateTurnUI();
   startPhase();
 }
 
@@ -200,13 +234,11 @@ function actionPhase() {
 function compileProtocol(playerId, lineIndex) {
   console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
 
-  // Discard cards from both players in that line
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
   gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
   gameState.players[1].lines[lineIndex] = [];
   gameState.players[2].lines[lineIndex] = [];
 
-  // Mark protocol as compiled
   const protocol = gameState.players[playerId].protocols[lineIndex];
   if (!gameState.compiledProtocols[playerId].includes(protocol)) {
     gameState.compiledProtocols[playerId].push(protocol);
@@ -223,7 +255,6 @@ function compileProtocol(playerId, lineIndex) {
 
   if (gameState.compiledProtocols[playerId].length === 3) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
-    // TODO: Implement end game logic here (disable inputs, show reset, etc)
   }
 
   endPhase();
@@ -238,9 +269,7 @@ function endPhase() {
   renderGameBoard();
   renderHand();
 
-  // Switch player
-  gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-  startTurn();
+  // Do NOT auto-switch turn here. Wait for user to click "End Turn"
 }
 
 function triggerEffects(phase) {
@@ -257,6 +286,22 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   renderHand();
   updateButtonsState();
 });
+
+document.getElementById('end-turn-button').addEventListener('click', () => {
+  gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+  startTurn();
+});
+
+function updateTurnUI() {
+  document.getElementById('player1').style.display = gameState.currentPlayer === 1 ? 'block' : 'none';
+  document.getElementById('player2').style.display = gameState.currentPlayer === 2 ? 'block' : 'none';
+
+  document.getElementById('turn-indicator').textContent = `Current Turn: Player ${gameState.currentPlayer}`;
+
+  renderHand();
+  renderGameBoard();
+  updateButtonsState();
+}
 
 function renderGameBoard() {
   ['player1', 'player2'].forEach(pidStr => {
@@ -307,7 +352,7 @@ function renderGameBoard() {
 
       const protocol = gameState.players[playerId].protocols[idx];
       const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
-      lineDiv.style.cursor = (playerId === 1 && !isCompiled) ? 'pointer' : 'default';
+      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled) ? 'pointer' : 'default';
     });
   });
 }
@@ -363,6 +408,11 @@ function renderHand() {
 }
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
+  if (playerId !== gameState.currentPlayer) {
+    alert("It's not this player's turn!");
+    return;
+  }
+
   const protocol = gameState.players[playerId].protocols[lineIndex];
   if (gameState.compiledProtocols[playerId].includes(protocol)) {
     alert(`Protocol "${protocol}" is already compiled. You cannot play cards here.`);
@@ -411,6 +461,14 @@ function updateRefreshButton() {
   const btn = document.getElementById('refresh-button');
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
+}
+
+function checkCache() {
+  const player = gameState.players[gameState.currentPlayer];
+  while (player.hand.length > 5) {
+    const discarded = player.hand.pop();
+    player.discard.push(discarded);
+  }
 }
 
 
