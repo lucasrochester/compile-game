@@ -507,22 +507,24 @@ function renderHand() {
     cardDiv.classList.add('card', 'in-hand');
 
     if (gameState.fire1DiscardMode) {
-      cardDiv.style.cursor = 'pointer';
-      if (gameState.fire1DiscardSelectedIndex === idx) {
-        cardDiv.classList.add('discard-select');
-      } else {
-        cardDiv.classList.remove('discard-select');
-      }
+  cardDiv.style.cursor = 'pointer';
+  if (gameState.fire1DiscardSelectedIndex === idx) {
+    cardDiv.classList.add('discard-select');
+  } else {
+    cardDiv.classList.remove('discard-select');
+  }
 
-      cardDiv.onclick = () => {
-        if (gameState.fire1DiscardSelectedIndex === idx) {
-          gameState.fire1DiscardSelectedIndex = null;
-        } else {
-          gameState.fire1DiscardSelectedIndex = idx;
-        }
-        renderHand();
-        updateDiscardConfirmButton();
-      };
+  cardDiv.onclick = () => {
+    if (gameState.fire1DiscardSelectedIndex === idx) {
+      gameState.fire1DiscardSelectedIndex = null;
+    } else {
+      gameState.fire1DiscardSelectedIndex = idx;
+    }
+    renderHand();
+    updateDiscardConfirmButton();
+  };
+}
+
     } else if (gameState.cacheDiscardMode) {
       cardDiv.style.cursor = 'pointer';
       if (gameState.cacheDiscardSelectedIndices.has(idx)) {
@@ -818,13 +820,19 @@ function updateDiscardInstruction() {
 }
 
 function updateDiscardConfirmButton() {
+  const btn = document.getElementById('fire1-discard-confirm-button');
+  if (!btn) return;
+
   if (gameState.fire1DiscardMode) {
-    const btn = document.getElementById('fire1-discard-confirm-button');
-    if (btn) {
-      btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
-      btn.style.display = 'inline-block';
-    }
+    btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
+    btn.style.display = 'inline-block';
     document.getElementById('discard-confirm-button').style.display = 'none';
+  } else {
+    btn.style.display = 'none';
+    document.getElementById('discard-confirm-button').style.display = 'inline-block';
+  }
+}
+
   } else {
     const player = gameState.players[gameState.currentPlayer];
     const requiredDiscardCount = player.hand.length - 5;
@@ -911,17 +919,22 @@ function renderGameBoard() {
         cardDiv.style.zIndex = i + 1;
         cardDiv.style.left = '0';
 
-        // If in deleteSelectionMode, highlight cards clickable for delete
         if (gameState.deleteSelectionMode) {
-          cardDiv.style.cursor = 'pointer';
-          cardDiv.classList.add('delete-selectable');
-          cardDiv.onclick = () => {
-            handleDeleteSelection(playerId, idx, i, card);
-          };
-        } else {
-          cardDiv.style.cursor = 'default';
-          cardDiv.onclick = null;
-        }
+  // Only top card (last in line) is selectable for delete
+  if (i === cards.length - 1) {
+    cardDiv.style.cursor = 'pointer';
+    cardDiv.classList.add('delete-selectable');
+    cardDiv.onclick = () => {
+      handleDeleteSelection(playerId, idx, i, card);
+    };
+  } else {
+    cardDiv.style.cursor = 'default';
+    cardDiv.onclick = null;
+  }
+} else {
+  cardDiv.style.cursor = 'default';
+  cardDiv.onclick = null;
+}
 
         if (cardDiv.classList.contains('covered') && !card.faceUp) {
           cardDiv.innerHTML = '';
