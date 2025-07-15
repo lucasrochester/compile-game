@@ -218,6 +218,7 @@ function nextPhase() {
 
 function startPhase() {
   console.log('Start phase');
+  triggerTopEffects();
   triggerEffects('Start');
   gameState.phase = 'control';
   runPhase();
@@ -244,19 +245,13 @@ function checkCompilePhase() {
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
 
-  if (gameState.compileSelectionMode) {
-    // Already waiting on player to pick — do nothing
-    return;
-  }
+  if (gameState.compileSelectionMode) return; // waiting on user selection
 
   const eligibleLines = [];
-
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
-    if (playerValue >= 10 && playerValue > opponentValue) {
-      eligibleLines.push(line);
-    }
+    if (playerValue >= 10 && playerValue > opponentValue) eligibleLines.push(line);
   }
 
   if (eligibleLines.length === 0) {
@@ -311,45 +306,36 @@ function forcedCompilePhase() {
 function actionPhase() {
   console.log('Action phase');
   updateButtonsState();
-  // Wait for player input — actions handled by UI event handlers
 }
 
 function cachePhase() {
   console.log('Cache phase');
   const player = gameState.players[gameState.currentPlayer];
-  const handSize = player.hand.length;
-  if (handSize <= 5) {
+  if (player.hand.length <= 5) {
     gameState.phase = 'end';
     runPhase();
     return;
   }
-
   gameState.cacheDiscardMode = true;
   gameState.cacheDiscardSelectedIndices.clear();
-
   document.getElementById('discard-confirm-container').style.display = 'block';
   updateDiscardInstruction();
   updateDiscardConfirmButton();
-
   renderHand();
 }
 
 function endPhase() {
   console.log('End phase');
   triggerEffects('End');
-
   gameState.cacheDiscardMode = false;
   document.getElementById('discard-confirm-container').style.display = 'none';
   gameState.cacheDiscardSelectedIndices.clear();
-
   selectedCardIndex = null;
   selectedCardFaceUp = false;
   updateFlipToggleButton();
-
   renderGameBoard();
   renderHand();
   updateButtonsState();
-
   setTimeout(() => {
     gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
     startTurn();
@@ -377,15 +363,208 @@ function compileProtocol(playerId, lineIndex) {
 
   if (gameState.compiledProtocols[playerId].length === 3) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
-    // TODO: add game end logic here
+    // TODO: game end logic
   }
 
   gameState.phase = 'cache';
   runPhase();
 }
 
-function triggerEffects(phase) {
-  // TODO: Implement start/end effects here
+function triggerCardEffect(card, effectType) {
+  if (!card || !card.faceUp) return;
+  const effectText = card[effectType.toLowerCase() + 'Effect'];
+  if (!effectText) return;
+  console.log(`Triggering ${effectType} effect of card "${card.name}": ${effectText}`);
+  // TODO: parse and execute effects
+}
+
+function triggerTopEffects() {
+  [1, 2].forEach(playerId => {
+    for (let line = 0; line < 3; line++) {
+      gameState.players[playerId].lines[line].forEach(card => {
+        if (card.faceUp) triggerCardEffect(card, 'top');
+      });
+    }
+  });
+}
+
+function playCardOnLine(playerId, handIndex, lineIndex) {
+  if (gameState.cacheDiscardMode) {
+    alert("You must discard cards before continuing!");
+    return;
+  }
+  if (playerId !== gameState.currentPlayer) {
+    alert("It's not this player's turn!");
+    return;
+  }
+  if (gameState.actionTaken) {
+    alert("You already took an action this turn!");
+    return;
+  }
+  if (gameState.mustCompileLineNextTurn[playerId] !== null) {
+    alert("You must compile your protocol this turn; no other actions allowed.");
+    return;
+  }
+  if (gameState.compileSelectionMode) {
+    alert("Please select a protocol to compile first.");
+    return;
+  }
+  const protocol = gameState.players[playerId].protocols[lineIndex];
+  if (gameState.compiledProtocols[playerId].includes(protocol)) {
+    alert(`Protocol "${protocol}" is already compiled. You cannot play cards here.`);
+    return;
+  }
+  const card = gameState.players[playerId].hand[handIndex];
+  const cardProtocol = card.name.split(' ')[0];
+  const lineProtocol = protocol;
+  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
+    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+    return;
+  }
+  const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  removedCard.faceUp = selectedCardFaceUp;
+  gameState.players[playerId].lines[lineIndex].push(removedCard);
+  if (removedCard.faceUp) {
+    triggerCardEffect(removedCard, 'middle');
+  }
+  selectedCardIndex = null;
+  selectedCardFaceUp = false;
+  updateFlipToggleButton();
+  gameState.actionTaken = true;
+  renderGameBoard();
+  renderHand();
+  updateButtonsState();
+  setTimeout(() => {
+    gameState.phase = 'cache';
+    runPhase();
+  }, 100);
+}
+
+function flipCard(card, playerId, lineIndex = null, cardIndexInLine = null) {
+  card.faceUp = !card.faceUp;
+  if (card.faceUp) {
+    if (lineIndex === null) {
+      triggerCardEffect(card, 'middle');
+    } else {
+      const line = gameState.players[playerId].lines[lineIndex];
+      const isUncovered = (cardIndexInLine === line.length - 1);
+      if (isUncovered) triggerCardEffect(card, 'middle');
+    }
+  }
+}
+
+function handleUncover(playerId, lineIndex) {
+  const line = gameState.players[playerId].lines[lineIndex];
+  if (line.length === 0) return;
+  const topCard = line[line.length - 1];
+  if (topCard.faceUp) {
+    triggerCardEffect(topCard, 'middle');
+  }
+}
+
+function setupFlipToggle() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.addEventListener('click', () => {
+    if (gameState.cacheDiscardMode) {
+      alert("Cannot flip cards while discarding.");
+      return;
+    }
+    if (selectedCardIndex === null) return;
+    const player = gameState.players[gameState.currentPlayer];
+    const card = player.hand[selectedCardIndex];
+    flipCard(card, gameState.currentPlayer, null, null);
+    selectedCardFaceUp = card.faceUp;
+    updateFlipToggleButton();
+    renderHand();
+  });
+}
+
+document.getElementById('refresh-button').addEventListener('click', () => {
+  if (gameState.cacheDiscardMode) {
+    alert("You must discard cards before continuing!");
+    return;
+  }
+  if (gameState.actionTaken) {
+    alert("You already took an action this turn!");
+    return;
+  }
+  if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+    alert("You must compile your protocol this turn; no other actions allowed.");
+    return;
+  }
+  if (gameState.compileSelectionMode) {
+    alert("Please select a protocol to compile first.");
+    return;
+  }
+  refreshHand(gameState.currentPlayer);
+  renderHand();
+  updateButtonsState();
+  gameState.actionTaken = true;
+  setTimeout(() => {
+    gameState.phase = 'cache';
+    runPhase();
+  }, 100);
+});
+
+function setupDiscardConfirmButton() {
+  const btn = document.getElementById('discard-confirm-button');
+  btn.addEventListener('click', () => {
+    const player = gameState.players[gameState.currentPlayer];
+    const requiredDiscardCount = player.hand.length - 5;
+
+    if (gameState.cacheDiscardSelectedIndices.size !== requiredDiscardCount) {
+      alert(`Please select exactly ${requiredDiscardCount} cards to discard.`);
+      return;
+    }
+
+    const indices = Array.from(gameState.cacheDiscardSelectedIndices).sort((a,b) => b - a);
+    for (const idx of indices) {
+      const [removed] = player.hand.splice(idx, 1);
+      player.discard.push(removed);
+    }
+
+    gameState.cacheDiscardMode = false;
+    gameState.cacheDiscardSelectedIndices.clear();
+
+    document.getElementById('discard-confirm-container').style.display = 'none';
+
+    renderHand();
+    updateButtonsState();
+
+    gameState.phase = 'end';
+    runPhase();
+  });
+}
+
+function updateDiscardInstruction() {
+  const player = gameState.players[gameState.currentPlayer];
+  const requiredDiscardCount = player.hand.length - 5;
+  const selectedCount = gameState.cacheDiscardSelectedIndices.size;
+  const instructionDiv = document.getElementById('discard-instruction');
+
+  instructionDiv.textContent = `Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount}`;
+}
+
+function updateDiscardConfirmButton() {
+  const player = gameState.players[gameState.currentPlayer];
+  const requiredDiscardCount = player.hand.length - 5;
+  const selectedCount = gameState.cacheDiscardSelectedIndices.size;
+
+  const btn = document.getElementById('discard-confirm-button');
+  btn.disabled = selectedCount !== requiredDiscardCount;
+}
+
+function lineTotalValue(playerId, lineIndex) {
+  const cards = gameState.players[playerId].lines[lineIndex];
+  return cards.reduce((sum, card) => {
+    if (card.faceUp) return sum + card.value;
+    else return sum + 2;
+  }, 0);
+}
+
+function updateFlipToggleButton() {
+  const btn = document.getElementById('flip-toggle-button');
+  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
 }
 
 function updateButtonsState() {
@@ -407,7 +586,7 @@ function renderHand() {
 
   if (!hand || hand.length === 0) {
     handDiv.textContent = 'No cards in hand';
-    updateRefreshButton();
+    updateButtonsState();
     return;
   }
 
@@ -480,180 +659,7 @@ function renderHand() {
     handDiv.appendChild(cardDiv);
   });
 
-  updateRefreshButton();
-}
-
-function playCardOnLine(playerId, handIndex, lineIndex) {
-  if (gameState.cacheDiscardMode) {
-    alert("You must discard cards before continuing!");
-    return;
-  }
-  if (playerId !== gameState.currentPlayer) {
-    alert("It's not this player's turn!");
-    return;
-  }
-  if (gameState.actionTaken) {
-    alert("You already took an action this turn!");
-    return;
-  }
-  if (gameState.mustCompileLineNextTurn[playerId] !== null) {
-    alert("You must compile your protocol this turn; no other actions allowed.");
-    return;
-  }
-  if (gameState.compileSelectionMode) {
-    alert("Please select a protocol to compile first.");
-    return;
-  }
-
-  const protocol = gameState.players[playerId].protocols[lineIndex];
-  if (gameState.compiledProtocols[playerId].includes(protocol)) {
-    alert(`Protocol "${protocol}" is already compiled. You cannot play cards here.`);
-    return;
-  }
-
-  const card = gameState.players[playerId].hand[handIndex];
-  const cardProtocol = card.name.split(' ')[0];
-  const lineProtocol = protocol;
-
-  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
-    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
-    return;
-  }
-
-  const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  removedCard.faceUp = selectedCardFaceUp;
-
-  gameState.players[playerId].lines[lineIndex].push(removedCard);
-
-  selectedCardIndex = null;
-  selectedCardFaceUp = false;
-  updateFlipToggleButton();
-
-  gameState.actionTaken = true;
-
-  renderGameBoard();
-  renderHand();
   updateButtonsState();
-
-  setTimeout(() => {
-    gameState.phase = 'cache';
-    runPhase();
-  }, 100);
-}
-
-document.getElementById('refresh-button').addEventListener('click', () => {
-  if (gameState.cacheDiscardMode) {
-    alert("You must discard cards before continuing!");
-    return;
-  }
-  if (gameState.actionTaken) {
-    alert("You already took an action this turn!");
-    return;
-  }
-  if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
-    alert("You must compile your protocol this turn; no other actions allowed.");
-    return;
-  }
-  if (gameState.compileSelectionMode) {
-    alert("Please select a protocol to compile first.");
-    return;
-  }
-
-  refreshHand(gameState.currentPlayer);
-  renderHand();
-  updateButtonsState();
-
-  gameState.actionTaken = true;
-
-  setTimeout(() => {
-    gameState.phase = 'cache';
-    runPhase();
-  }, 100);
-});
-
-function setupDiscardConfirmButton() {
-  const btn = document.getElementById('discard-confirm-button');
-  btn.addEventListener('click', () => {
-    const player = gameState.players[gameState.currentPlayer];
-    const requiredDiscardCount = player.hand.length - 5;
-
-    if (gameState.cacheDiscardSelectedIndices.size !== requiredDiscardCount) {
-      alert(`Please select exactly ${requiredDiscardCount} cards to discard.`);
-      return;
-    }
-
-    const indices = Array.from(gameState.cacheDiscardSelectedIndices).sort((a,b) => b - a);
-    for (const idx of indices) {
-      const [removed] = player.hand.splice(idx, 1);
-      player.discard.push(removed);
-    }
-
-    gameState.cacheDiscardMode = false;
-    gameState.cacheDiscardSelectedIndices.clear();
-
-    document.getElementById('discard-confirm-container').style.display = 'none';
-
-    renderHand();
-    updateButtonsState();
-
-    gameState.phase = 'end';
-    runPhase();
-  });
-}
-
-function updateDiscardInstruction() {
-  const player = gameState.players[gameState.currentPlayer];
-  const requiredDiscardCount = player.hand.length - 5;
-  const selectedCount = gameState.cacheDiscardSelectedIndices.size;
-  const instructionDiv = document.getElementById('discard-instruction');
-
-  instructionDiv.textContent = `Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount}`;
-}
-
-function updateDiscardConfirmButton() {
-  const player = gameState.players[gameState.currentPlayer];
-  const requiredDiscardCount = player.hand.length - 5;
-  const selectedCount = gameState.cacheDiscardSelectedIndices.size;
-
-  const btn = document.getElementById('discard-confirm-button');
-  btn.disabled = selectedCount !== requiredDiscardCount;
-}
-
-function lineTotalValue(playerId, lineIndex) {
-  const cards = gameState.players[playerId].lines[lineIndex];
-  return cards.reduce((sum, card) => {
-    if (card.faceUp) return sum + card.value;
-    else return sum + 2;
-  }, 0);
-}
-
-function updateFlipToggleButton() {
-  const btn = document.getElementById('flip-toggle-button');
-  btn.textContent = selectedCardFaceUp ? 'Flip Card: Face Down' : 'Flip Card: Face Up';
-}
-
-function setupFlipToggle() {
-  const btn = document.getElementById('flip-toggle-button');
-  btn.addEventListener('click', () => {
-    if (gameState.cacheDiscardMode) {
-      alert("Cannot flip cards while discarding.");
-      return;
-    }
-    if (selectedCardIndex === null) return;
-    selectedCardFaceUp = !selectedCardFaceUp;
-    updateFlipToggleButton();
-    renderHand();
-  });
-}
-
-function updateRefreshButton() {
-  const btn = document.getElementById('refresh-button');
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode) {
-    btn.disabled = true;
-  } else {
-    const hand = gameState.players[gameState.currentPlayer].hand;
-    btn.disabled = hand.length >= 5 || gameState.actionTaken;
-  }
 }
 
 function renderGameBoard() {
@@ -730,3 +736,4 @@ function updateTurnUI() {
   renderGameBoard();
   updateButtonsState();
 }
+
