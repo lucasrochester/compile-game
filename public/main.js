@@ -94,8 +94,14 @@ function setupLineClickDelegation() {
     const playerId = parseInt(pidStr.replace('player', ''));
     const container = document.querySelector(`#${pidStr} .lines`);
     container.addEventListener('click', (e) => {
-      if (gameState.phase !== 'action' || gameState.cacheDiscardMode || gameState.compileSelectionMode) return;
-      if (playerId !== gameState.currentPlayer) return;
+      if (gameState.phase !== 'action' || gameState.cacheDiscardMode || gameState.compileSelectionMode) {
+        console.log('Line click ignored: phase', gameState.phase);
+        return;
+      }
+      if (playerId !== gameState.currentPlayer) {
+        console.log('Line click ignored: not current player');
+        return;
+      }
 
       let lineDiv = e.target;
       while (lineDiv && !lineDiv.classList.contains('line')) {
@@ -188,6 +194,18 @@ function runPhase() {
   }
 }
 
+function nextPhase() {
+  const phases = ['start', 'control', 'compile', 'action', 'cache', 'end'];
+  const currentIndex = phases.indexOf(gameState.phase);
+  if (currentIndex < phases.length - 1) {
+    gameState.phase = phases[currentIndex + 1];
+    runPhase();
+  } else {
+    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+    startTurn();
+  }
+}
+
 function startPhase() {
   console.log('Start phase');
   triggerTopEffects();
@@ -277,8 +295,7 @@ function forcedCompilePhase() {
 function actionPhase() {
   console.log('Action phase');
   updateButtonsState();
-  // Inputs enabled only during this phase; player can play one card OR refresh
-  // After action, code auto advances to cache phase
+  // No blocking for multiple actions — inputs disabled outside action phase
 }
 
 function cachePhase() {
@@ -404,7 +421,7 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
-  // Immediately advance to cache phase after the action
+  // Immediately advance to cache phase after action
   gameState.phase = 'cache';
   runPhase();
 }
@@ -699,4 +716,3 @@ function updateTurnUI() {
   renderGameBoard();
   updateButtonsState();
 }
-
