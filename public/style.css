@@ -237,3 +237,21 @@ body {
   background-color: #666;
   border-radius: 3px;
 }
+
+.player-area.current-turn {
+  border-color: #6cf !important;
+  box-shadow: 0 0 10px #6cf;
+}
+
+/* Highlight selected cards for discarding */
+#hand .card.discard-select {
+  outline: 3px solid orange;
+  background-color: #660000 !important;
+  cursor: pointer;
+}
+
+/* Disable cursor on disabled buttons */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
