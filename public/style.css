@@ -3,12 +3,25 @@ body {
   background: #222;
   color: #eee;
   padding: 20px;
+  margin: 0;
+}
+
+h1, h2 {
+  margin: 0 0 10px 0;
 }
 
 .player-area {
-  border: 1px solid #555;
+  border: 2px solid #555;
   padding: 10px;
   margin-bottom: 20px;
+  border-radius: 8px;
+  background: #111;
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.player-area.current-turn {
+  border-color: #6cf;
+  box-shadow: 0 0 10px #6cf;
 }
 
 .lines {
@@ -25,6 +38,8 @@ body {
   border-radius: 8px;
   padding: 10px;
   white-space: nowrap;
+  cursor: default;
+  user-select: none;
 }
 
 .protocol-name {
@@ -47,7 +62,7 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 8px 8px 8px 8px;
+  padding: 8px;
   border: 2px solid gray;
   transition: top 0.3s ease;
   overflow: hidden;
@@ -55,7 +70,7 @@ body {
   left: 0;
 }
 
-/* Remove protocol-colored border on face-down cards (field) */
+/* Face-down cards on the field */
 .line .card.face-down:not(.in-hand) {
   background: black !important;
   color: white !important;
@@ -64,9 +79,7 @@ body {
   text-align: center;
   justify-content: center;
   align-items: center;
-  user-select: none;
   padding: 0;
-  display: flex;
   border-color: black !important;
 }
 
@@ -86,7 +99,7 @@ body {
   user-select: none;
 }
 
-/* Equal height sections with smaller text for field cards */
+/* Equal height sections with smaller text */
 .line .card .card-section {
   font-size: 11px;
   line-height: 1.2;
@@ -94,14 +107,13 @@ body {
   overflow-y: auto;
   white-space: normal;
   margin-bottom: 6px;
-  padding: 3px 4px 3px 4px;
+  padding: 3px 4px;
   border-bottom: 1.5px solid #555;
   scrollbar-width: thin;
   scrollbar-color: #666 transparent;
   box-sizing: border-box;
 }
 
-/* Remove margin and border on last section */
 .line .card .card-section:last-child {
   margin-bottom: 0;
   border-bottom: none;
@@ -128,9 +140,11 @@ body {
 
 /* Hand container */
 #hand-container {
-  border: 1px solid #555;
+  border: 2px solid #555;
   padding: 10px;
   margin-top: 20px;
+  border-radius: 8px;
+  background: #111;
 }
 
 #hand {
@@ -146,7 +160,7 @@ body {
   width: 100px;
   height: 140px;
   cursor: pointer;
-  padding: 8px 8px 8px 8px;
+  padding: 8px;
   background: #444;
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0,0,0,0.7);
@@ -158,9 +172,14 @@ body {
   overflow: hidden;
   word-break: break-word;
   border: 2px solid gray;
+  transition: background 0.3s;
 }
 
-/* Face-down cards in hand look like field face-down cards */
+#hand .card:hover {
+  background: #666;
+}
+
+/* Face-down cards in hand */
 #hand .card.face-down.in-hand {
   background: black !important;
   color: white !important;
@@ -169,9 +188,7 @@ body {
   text-align: center;
   justify-content: center;
   align-items: center;
-  user-select: none;
   padding: 0;
-  display: flex;
   border-color: black !important;
   position: relative;
 }
@@ -185,11 +202,11 @@ body {
   font-weight: bold;
   font-size: 64px;
   color: white;
-  user-select: none;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  user-select: none;
 }
 
 /* Smaller text in hand card sections */
@@ -200,31 +217,38 @@ body {
   overflow-y: auto;
   white-space: normal;
   margin-bottom: 6px;
-  padding: 3px 4px 3px 4px;
+  padding: 3px 4px;
   border-bottom: 1.5px solid #555;
   scrollbar-width: thin;
   scrollbar-color: #666 transparent;
   box-sizing: border-box;
 }
 
-/* Remove margin and border on last section */
 #hand .card .card-section:last-child {
   margin-bottom: 0;
   border-bottom: none;
 }
 
-/* Smaller card name font in hand */
 #hand .card .card-name {
   font-size: 12px;
   margin-bottom: 6px;
   padding-bottom: 4px;
 }
 
-#hand .card:hover {
-  background: #666;
+/* Highlight selected card in hand */
+#hand .card.selected {
+  background: #555 !important;
+  border-color: #6cf !important;
 }
 
-/* Scrollbars */
+/* Highlight cards selected for discard */
+#hand .card.discard-select {
+  outline: 3px solid orange;
+  background-color: #660000 !important;
+  cursor: pointer;
+}
+
+/* Scrollbars for card sections */
 .card-top::-webkit-scrollbar,
 .card-middle::-webkit-scrollbar,
 .card-bottom::-webkit-scrollbar {
@@ -238,20 +262,33 @@ body {
   border-radius: 3px;
 }
 
-.player-area.current-turn {
-  border-color: #6cf !important;
-  box-shadow: 0 0 10px #6cf;
-}
-
-/* Highlight selected cards for discarding */
-#hand .card.discard-select {
-  outline: 3px solid orange;
-  background-color: #660000 !important;
+/* Buttons styling */
+button {
+  background-color: #444;
+  border: 1.5px solid #666;
+  border-radius: 6px;
+  color: #eee;
+  font-size: 14px;
+  padding: 6px 12px;
   cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
-/* Disable cursor on disabled buttons */
+button:hover:not(:disabled) {
+  background-color: #666;
+  border-color: #6cf;
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Turn indicator styling */
+#turn-indicator {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #eee;
 }
