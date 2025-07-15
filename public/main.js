@@ -46,6 +46,8 @@ let selectedCardIndex = null;
 let selectedCardFaceUp = false;
 let cardPopupAckCount = 0;
 
+// -------------------- UI & Game Logic --------------------
+
 function showCardPopup(card) {
   cardPopupAckCount = 0;
   const modal = document.getElementById('card-popup-modal');
@@ -54,7 +56,7 @@ function showCardPopup(card) {
   const ackCountEl = document.getElementById('popup-ack-count');
 
   nameEl.textContent = card.name;
-  textEl.textContent = 
+  textEl.textContent =
     (card.topEffect ? `Top Effect:\n${card.topEffect}\n\n` : '') +
     (card.middleEffect ? `Middle Effect:\n${card.middleEffect}\n\n` : '') +
     (card.bottomEffect ? `Bottom Effect:\n${card.bottomEffect}` : '');
@@ -581,7 +583,7 @@ function renderHand() {
   updateRefreshButton();
 }
 
-function playCardOnLine(playerId, handIndex, lineIndex) {
+async function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode) {
     alert("You must discard cards before continuing!");
     return;
@@ -633,11 +635,11 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
+  // Special Fire 1 effect handling:
   if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
-    handleFire1Effect(removedCard, playerId).then(() => {
-      gameState.phase = 'cache';
-      runPhase();
-    });
+    await handleFire1Effect(removedCard, playerId);
+    gameState.phase = 'cache';
+    runPhase();
   } else {
     setTimeout(() => {
       gameState.phase = 'cache';
@@ -914,25 +916,18 @@ function updateTurnUI() {
 }
 
 function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
-  console.log('handleDeleteSelection called:', playerId, lineIndex, cardIndex, card.name);
-
-  if (!gameState.deleteSelectionMode) {
-    console.log('Delete selection mode not active, ignoring click.');
-    return;
-  }
+  if (!gameState.deleteSelectionMode) return;
 
   let ownerId = null;
   if (gameState.players[1].lines[lineIndex].includes(card)) ownerId = 1;
   else if (gameState.players[2].lines[lineIndex].includes(card)) ownerId = 2;
   else {
-    console.log('Card ownership unknown for:', card.name);
-    alert("Card ownership unknown");
+    alert("Card ownership unknown.");
     return;
   }
 
   const ownerLine = gameState.players[ownerId].lines[lineIndex];
   if (cardIndex !== ownerLine.length - 1) {
-    console.log('Attempted to delete non-top card:', card.name);
     alert("You can only delete the top card of a stack.");
     return;
   }
@@ -947,9 +942,12 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   renderHand();
   updateButtonsState();
 
+  // After deletion, proceed to cache phase (or next as needed)
   gameState.phase = 'cache';
   runPhase();
 }
+
+// ----- Fire 1 effect handling -----
 
 async function handleFire1Effect(card, playerId) {
   return new Promise((resolve) => {
@@ -971,20 +969,24 @@ async function handleFire1Effect(card, playerId) {
       updateDiscardInstruction();
       updateDiscardConfirmButton();
 
-      let container = document.getElementById('fire1-discard-container');
-      if (!container) setupFire1DiscardConfirmUI();
-      container.style.display = 'block';
+      const container = document.getElementById('fire1-discard-container');
+      if (container) container.style.display = 'block';
+      else setupFire1DiscardConfirmUI();
 
-      const checkDiscardConfirmed = setInterval(() => {
-        if (!gameState.fire1DiscardMode) {
-          clearInterval(checkDiscardConfirmed);
-          container.style.display = 'none';
+      // Wait for discard and then deletion to finish
+      // Resolve promise in handleDeleteSelection after deletion completes
+    };
 
-          gameState.deleteSelectionMode = true;
-          alert("Select a card on the board to delete.");
-          resolve();
-        }
-      }, 200);
+    // Patch handleDeleteSelection to resolve promise when deletion finishes
+    const originalHandleDeleteSelection = handleDeleteSelection;
+    handleDeleteSelection = function(playerId, lineIndex, cardIndex, card) {
+      originalHandleDeleteSelection(playerId, lineIndex, cardIndex, card);
+      if (!gameState.deleteSelectionMode && !gameState.fire1DiscardMode) {
+        // Effect fully resolved after deletion
+        resolve();
+        // Restore original handler to avoid patch stacking
+        handleDeleteSelection = originalHandleDeleteSelection;
+      }
     };
   });
 }
@@ -1011,8 +1013,6 @@ function setupFire1DiscardConfirmUI() {
         alert("Please select a card to discard.");
         return;
       }
-      console.log('Fire1 discard confirmed for card index:', gameState.fire1DiscardSelectedIndex);
-
       const player = gameState.players[gameState.currentPlayer];
       const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
       player.discard.push(discardedCard);
