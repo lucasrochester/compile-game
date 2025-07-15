@@ -494,7 +494,6 @@ function updateButtonsState() {
 function renderHand() {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
-
   const hand = gameState.players[gameState.currentPlayer].hand;
 
   if (!hand || hand.length === 0) {
@@ -507,12 +506,6 @@ function renderHand() {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('card', 'in-hand');
 
-    const isSelected = idx === selectedCardIndex;
-    const faceUpToShow = isSelected ? selectedCardFaceUp : card.faceUp;
-
-    cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
-
-    // Highlight card if in Fire 1 discard selection mode and this card is selected for discard
     if (gameState.fire1DiscardMode) {
       cardDiv.style.cursor = 'pointer';
       if (gameState.fire1DiscardSelectedIndex === idx) {
@@ -520,6 +513,16 @@ function renderHand() {
       } else {
         cardDiv.classList.remove('discard-select');
       }
+
+      cardDiv.onclick = () => {
+        if (gameState.fire1DiscardSelectedIndex === idx) {
+          gameState.fire1DiscardSelectedIndex = null;
+        } else {
+          gameState.fire1DiscardSelectedIndex = idx;
+        }
+        renderHand();
+        updateDiscardConfirmButton();
+      };
     } else if (gameState.cacheDiscardMode) {
       cardDiv.style.cursor = 'pointer';
       if (gameState.cacheDiscardSelectedIndices.has(idx)) {
@@ -527,46 +530,22 @@ function renderHand() {
       } else {
         cardDiv.classList.remove('discard-select');
       }
-    } else {
-      cardDiv.style.cursor = 'pointer';
-      cardDiv.classList.remove('discard-select');
-    }
 
-    if (!faceUpToShow) {
-      cardDiv.classList.add('face-down');
-    } else {
-      cardDiv.classList.remove('face-down');
-    }
-
-    cardDiv.style.background = isSelected ? '#555' : '#444';
-
-    cardDiv.innerHTML = `
-      <div class="card-section card-name">${card.name} (${card.value})</div>
-      <div class="card-section card-top">${card.topEffect || ''}</div>
-      <div class="card-section card-middle">${card.middleEffect || ''}</div>
-      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
-    `;
-
-    cardDiv.addEventListener('click', async () => {
-      if (gameState.cacheDiscardMode) {
-        // Normal cache discard selection
+      cardDiv.onclick = () => {
         if (gameState.cacheDiscardSelectedIndices.has(idx)) {
           gameState.cacheDiscardSelectedIndices.delete(idx);
         } else {
           gameState.cacheDiscardSelectedIndices.add(idx);
         }
-        updateDiscardInstruction();
+        renderHand();
         updateDiscardConfirmButton();
-        renderHand();
-      } else if (gameState.fire1DiscardMode) {
-        // Fire 1 discard selection
-        if (gameState.fire1DiscardSelectedIndex === idx) {
-          gameState.fire1DiscardSelectedIndex = null;
-        } else {
-          gameState.fire1DiscardSelectedIndex = idx;
-        }
-        renderHand();
-      } else {
+      };
+    } else {
+      cardDiv.style.cursor = 'pointer';
+      cardDiv.classList.remove('discard-select');
+
+      cardDiv.onclick = () => {
+        // Your normal card select logic here (optional)
         if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
           alert("You must compile your protocol this turn; no other actions allowed.");
           return;
@@ -583,14 +562,34 @@ function renderHand() {
         selectedCardFaceUp = card.faceUp;
         updateFlipToggleButton();
         renderHand();
-      }
-    });
+      };
+    }
+
+    // Show face up/down as before, style, etc
+    const faceUpToShow = (selectedCardIndex === idx) ? selectedCardFaceUp : card.faceUp;
+    cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
+
+    if (!faceUpToShow) {
+      cardDiv.classList.add('face-down');
+    } else {
+      cardDiv.classList.remove('face-down');
+    }
+
+    cardDiv.style.background = (selectedCardIndex === idx) ? '#555' : '#444';
+
+    cardDiv.innerHTML = `
+      <div class="card-section card-name">${card.name} (${card.value})</div>
+      <div class="card-section card-top">${card.topEffect || ''}</div>
+      <div class="card-section card-middle">${card.middleEffect || ''}</div>
+      <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
+    `;
 
     handDiv.appendChild(cardDiv);
   });
 
   updateRefreshButton();
 }
+
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode) {
