@@ -155,7 +155,7 @@ function setupLineClickDelegation() {
         alert("You must discard cards before continuing!");
         return;
       }
-      if (gameState.actionTaken) {
+      if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
         alert("You already took an action this turn!");
         return;
       }
@@ -167,12 +167,8 @@ function setupLineClickDelegation() {
         alert("Please select a protocol to compile first.");
         return;
       }
-      if (gameState.fire1DiscardMode) {
-        alert("Please select a card from your hand to discard (highlighted).");
-        return;
-      }
-      if (gameState.deleteSelectionMode) {
-        alert("Please select a card on the board to delete.");
+      if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
+        alert("Cannot play cards during special effect selection.");
         return;
       }
       if (playerId !== gameState.currentPlayer) {
@@ -565,7 +561,7 @@ function renderHand() {
           alert("Please select a protocol to compile first.");
           return;
         }
-        if (gameState.actionTaken) {
+        if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
           alert("You already took an action this turn!");
           return;
         }
@@ -591,7 +587,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
     alert("It's not this player's turn!");
     return;
   }
-  if (gameState.actionTaken) {
+  if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
     alert("You already took an action this turn!");
     return;
   }
@@ -652,7 +648,7 @@ document.getElementById('refresh-button').addEventListener('click', () => {
     alert("You must discard cards before continuing!");
     return;
   }
-  if (gameState.actionTaken) {
+  if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
     alert("You already took an action this turn!");
     return;
   }
@@ -940,8 +936,13 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   renderHand();
   updateButtonsState();
 
-  // After deletion, proceed to cache phase (or next as needed)
-  gameState.phase = 'cache';
+  // Fix here: jump to end phase after Fire1 deletion, not cache phase
+  if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
+    // still in Fire1 mode, don't change phase yet
+    return;
+  }
+
+  gameState.phase = 'end';
   runPhase();
 }
 
