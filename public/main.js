@@ -30,6 +30,8 @@ const gameState = {
   controlComponent: false,
   mustCompileLine: null,
   compiledProtocols: {1: [], 2: []},
+  phase: 'start', // current phase for the turn
+  actionTaken: false,
 };
 
 let selectedCardIndex = null;
@@ -111,9 +113,18 @@ function setupLineClickDelegation() {
       selectedCardIndex = null;
       selectedCardFaceUp = false;
       updateFlipToggleButton();
+
+      // After playing a card, action is done for this turn
+      gameState.actionTaken = true;
+
       renderGameBoard();
       renderHand();
       updateButtonsState();
+
+      // Proceed to next phase after action
+      setTimeout(() => {
+        nextPhase();
+      }, 100);
     });
   });
 }
@@ -126,7 +137,7 @@ function drawCard(playerId) {
     shuffle(player.deck);
   }
   const card = player.deck.pop();
-  card.faceUp = true; 
+  card.faceUp = true;
   player.hand.push(card);
   return card;
 }
@@ -142,18 +153,57 @@ function startTurn() {
   console.log('Starting turn for player', gameState.currentPlayer);
   gameState.controlComponent = false;
   gameState.mustCompileLine = null;
+  gameState.phase = 'start';
+  gameState.actionTaken = false;
   updateTurnUI();
-  startPhase();
+  runPhase();
+}
+
+function runPhase() {
+  switch (gameState.phase) {
+    case 'start':
+      startPhase();
+      break;
+    case 'control':
+      checkControlPhase();
+      break;
+    case 'compile':
+      checkCompilePhase();
+      break;
+    case 'action':
+      actionPhase();
+      break;
+    case 'cache':
+      cachePhase();
+      break;
+    case 'end':
+      endPhase();
+      break;
+  }
+}
+
+function nextPhase() {
+  const phases = ['start', 'control', 'compile', 'action', 'cache', 'end'];
+  const currentIndex = phases.indexOf(gameState.phase);
+  if (currentIndex < phases.length - 1) {
+    gameState.phase = phases[currentIndex + 1];
+    runPhase();
+  } else {
+    // Turn finished: switch player
+    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+    startTurn();
+  }
 }
 
 function startPhase() {
   console.log('Start phase');
   triggerEffects('Start');
-  checkControl();
+  gameState.phase = 'control';
+  runPhase();
 }
 
-function checkControl() {
-  console.log('Check control phase');
+function checkControlPhase() {
+  console.log('Control phase');
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
   let controlCount = 0;
@@ -164,16 +214,12 @@ function checkControl() {
   }
   gameState.controlComponent = controlCount >= 2;
   updateButtonsState();
-  checkCompile();
+  gameState.phase = 'compile';
+  runPhase();
 }
 
-function lineTotalValue(playerId, lineIndex) {
-  const cards = gameState.players[playerId].lines[lineIndex];
-  return cards.reduce((sum, card) => sum + (card.faceUp ? card.value : 0), 0);
-}
-
-function checkCompile() {
-  console.log('Check compile phase');
+function checkCompilePhase() {
+  console.log('Compile phase');
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
   gameState.mustCompileLine = null;
@@ -194,13 +240,56 @@ function checkCompile() {
       compileProtocol(playerId, gameState.mustCompileLine);
     }, 100);
   } else {
-    actionPhase();
+    gameState.phase = 'action';
+    runPhase();
   }
 }
 
 function actionPhase() {
   console.log('Action phase');
   updateButtonsState();
+
+  // If mustCompileLine is set, player must compile; but auto compile already done in compile phase.
+  // So here player can either:
+  // - Play one card (which triggers gameState.actionTaken = true and moves to next phase)
+  // - Or refresh hand, which we treat as the action, then move to next phase.
+
+  // Disable refresh button if hand >=5 or action already taken
+  updateButtonsState();
+
+  // If player chooses to refresh (via button), refreshHand() will be called, then move on:
+
+  // We wait here for player interaction, after playing or refreshing, nextPhase() is called.
+
+  // No automatic progression from here to let player do their action.
+}
+
+function cachePhase() {
+  console.log('Cache phase');
+  const player = gameState.players[gameState.currentPlayer];
+  while (player.hand.length > 5) {
+    const discarded = player.hand.pop();
+    player.discard.push(discarded);
+  }
+  gameState.phase = 'end';
+  runPhase();
+}
+
+function endPhase() {
+  console.log('End phase');
+  triggerEffects('End');
+  selectedCardIndex = null;
+  selectedCardFaceUp = false;
+  updateFlipToggleButton();
+  renderGameBoard();
+  renderHand();
+  updateButtonsState();
+
+  // Automatically move to next player's turn after a short delay so player sees end effects
+  setTimeout(() => {
+    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+    startTurn();
+  }, 500);
 }
 
 function compileProtocol(playerId, lineIndex) {
@@ -227,45 +316,42 @@ function compileProtocol(playerId, lineIndex) {
 
   if (gameState.compiledProtocols[playerId].length === 3) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
+    // TODO: stop game or reset
   }
 
-  endPhase();
-}
-
-function endPhase() {
-  console.log('End phase');
-  triggerEffects('End');
-  selectedCardIndex = null;
-  selectedCardFaceUp = false;
-  updateFlipToggleButton();
-  renderGameBoard();
-  renderHand();
-
-  // Wait for user to press "End Turn" button to switch players
+  // After compile, immediately move to cache phase (skip action)
+  gameState.phase = 'cache';
+  runPhase();
 }
 
 function triggerEffects(phase) {
-  // Stub for effects
+  // Stub for effects on Start and End phases
 }
 
 function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
-  refreshBtn.disabled = gameState.players[gameState.currentPlayer].hand.length >= 5;
+  const hand = gameState.players[gameState.currentPlayer].hand;
+  // Disable refresh if hand >=5 or if player already took action this turn
+  refreshBtn.disabled = hand.length >= 5 || gameState.actionTaken;
+
+  // No compile button needed, compile happens automatically
 }
 
 document.getElementById('refresh-button').addEventListener('click', () => {
+  if (gameState.actionTaken) return; // only once per turn
   refreshHand(gameState.currentPlayer);
   renderHand();
   updateButtonsState();
-});
+  gameState.actionTaken = true;
 
-document.getElementById('end-turn-button').addEventListener('click', () => {
-  gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-  startTurn();
+  // After refresh action, go to next phase (cache)
+  setTimeout(() => {
+    nextPhase();
+  }, 100);
 });
 
 function updateTurnUI() {
-  // Show both players always
+  // Both players visible always
   document.getElementById('player1').style.display = 'block';
   document.getElementById('player2').style.display = 'block';
 
@@ -280,7 +366,6 @@ function updateTurnUI() {
     p1.classList.remove('current-turn');
   }
 
-  // Update turn indicator
   document.getElementById('turn-indicator').textContent = `Current Turn: Player ${gameState.currentPlayer}`;
 
   renderHand();
@@ -422,9 +507,16 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   selectedCardFaceUp = false;
   updateFlipToggleButton();
 
+  gameState.actionTaken = true;
+
   renderGameBoard();
   renderHand();
   updateButtonsState();
+
+  // After action, move to next phase
+  setTimeout(() => {
+    nextPhase();
+  }, 100);
 }
 
 function updateFlipToggleButton() {
@@ -445,7 +537,7 @@ function setupFlipToggle() {
 function updateRefreshButton() {
   const btn = document.getElementById('refresh-button');
   const hand = gameState.players[gameState.currentPlayer].hand;
-  btn.disabled = hand.length >= 5;
+  btn.disabled = hand.length >= 5 || gameState.actionTaken;
 }
 
 function checkCache() {
@@ -455,6 +547,7 @@ function checkCache() {
     player.discard.push(discarded);
   }
 }
+
 
 
 
