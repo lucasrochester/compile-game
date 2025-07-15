@@ -7,14 +7,14 @@ const protocolColors = {
   Speed: 'white',
   Gravity: 'pink',
   Darkness: 'darkslategray',
-  Fire: 'orange', // Added Fire protocol color
+  Fire: 'orange', // added Fire for testing
 };
 
 const gameState = {
   players: {
     1: {
-      protocols: ['Fire', 'Life', 'Light'], // Added Fire here
-      lines: [[], [], []],
+      protocols: ['Life', 'Light', 'Psychic', 'Fire'], // added Fire protocol here for testing
+      lines: [[], [], [], []], // added 4th line for Fire protocol
       hand: [],
       deck: [],
       discard: [],
@@ -37,49 +37,15 @@ const gameState = {
   cacheDiscardSelectedIndices: new Set(),
   compileSelectionMode: false,
   compileEligibleLines: [],
-  deleteSelectionMode: false, // For Fire 1 delete step
-  fire1DiscardMode: false,    // For Fire 1 discard step
-  fire1DiscardSelectedIndex: null, // Selected card index for discard during Fire 1 effect
+
+  // Fire 1 effect states:
+  fire1DiscardMode: false,
+  fire1DiscardSelectedIndex: null,
+  deleteSelectionMode: false,
 };
 
 let selectedCardIndex = null;
 let selectedCardFaceUp = false;
-
-// Variables for Fire 1 popup modal acknowledgement tracking
-let cardPopupAckCount = 0;
-
-function showCardPopup(card) {
-  cardPopupAckCount = 0;
-
-  const modal = document.getElementById('card-popup-modal');
-  const nameEl = document.getElementById('popup-card-name');
-  const textEl = document.getElementById('popup-card-text');
-  const ackCountEl = document.getElementById('popup-ack-count');
-
-  nameEl.textContent = card.name;
-  textEl.textContent = 
-    (card.topEffect ? `Top Effect:\n${card.topEffect}\n\n` : '') +
-    (card.middleEffect ? `Middle Effect:\n${card.middleEffect}\n\n` : '') +
-    (card.bottomEffect ? `Bottom Effect:\n${card.bottomEffect}` : '');
-
-  ackCountEl.textContent = cardPopupAckCount;
-
-  modal.style.display = 'block';
-
-  modal.onclick = () => {
-    cardPopupAckCount++;
-    ackCountEl.textContent = cardPopupAckCount;
-
-    if (cardPopupAckCount >= 2) {
-      modal.style.display = 'none';
-      modal.onclick = null;
-      if (gameState._fire1AfterPopupResolve) {
-        gameState._fire1AfterPopupResolve();
-        gameState._fire1AfterPopupResolve = null;
-      }
-    }
-  };
-}
 
 fetch('/data/cards.json')
   .then(res => res.json())
@@ -112,32 +78,14 @@ function initializeGame() {
 
     shuffle(player.deck);
 
-    player.lines = [[], [], []];
+    // Make sure lines array matches number of protocols
+    player.lines = player.protocols.map(() => []);
+
     player.hand = [];
     player.discard = [];
 
-    const cardsToDraw = (pid === 1) ? 4 : 5;
-    for (let i = 0; i < cardsToDraw && player.deck.length > 0; i++) {
+    for (let i = 0; i < 5 && player.deck.length > 0; i++) {
       drawCard(pid);
-    }
-
-    // Add Fire 1 card explicitly to Player 1 hand for testing
-    if (pid === 1) {
-      let fireOneIndex = player.deck.findIndex(c => c.name === 'Fire 1');
-      if (fireOneIndex !== -1) {
-        const fireOneCard = player.deck.splice(fireOneIndex, 1)[0];
-        player.hand.push(fireOneCard);
-      } else {
-        player.hand.push({
-          name: 'Fire 1',
-          value: 1,
-          protocolColor: protocolColors['Fire'],
-          faceUp: false,
-          topEffect: '',
-          middleEffect: 'Discard 1 card. If you do, delete 1 card.',
-          bottomEffect: '',
-        });
-      }
     }
   });
 
@@ -148,13 +96,13 @@ function initializeGame() {
 
   setupLineClickDelegation();
   setupDiscardConfirmButton();
+  setupFire1DiscardConfirmUI();
 }
 
 function setupLineClickDelegation() {
-  ['player1', 'player2'].forEach(pidStr => {
-    const playerId = parseInt(pidStr.replace('player', ''));
+  Object.entries({player1: 1, player2: 2}).forEach(([pidStr, playerId]) => {
     const container = document.querySelector(`#${pidStr} .lines`);
-    container.addEventListener('click', async (e) => {
+    container.addEventListener('click', (e) => {
       if (gameState.cacheDiscardMode) {
         alert("You must discard cards before continuing!");
         return;
@@ -172,7 +120,7 @@ function setupLineClickDelegation() {
         return;
       }
       if (gameState.fire1DiscardMode) {
-        alert("Please select a card from your hand to discard (highlighted).");
+        alert("Please discard a card for Fire 1 effect first.");
         return;
       }
       if (gameState.deleteSelectionMode) {
@@ -197,8 +145,7 @@ function setupLineClickDelegation() {
         return;
       }
 
-      await playCardOnLine(playerId, selectedCardIndex, lineIndex);
-
+      playCardOnLine(playerId, selectedCardIndex, lineIndex);
       selectedCardIndex = null;
       selectedCardFaceUp = false;
       updateFlipToggleButton();
@@ -239,9 +186,9 @@ function startTurn() {
   gameState.cacheDiscardSelectedIndices.clear();
   gameState.compileSelectionMode = false;
   gameState.compileEligibleLines = [];
-  gameState.deleteSelectionMode = false;
   gameState.fire1DiscardMode = false;
   gameState.fire1DiscardSelectedIndex = null;
+  gameState.deleteSelectionMode = false;
   updateTurnUI();
 
   const mustCompileLine = gameState.mustCompileLineNextTurn[gameState.currentPlayer];
@@ -300,7 +247,7 @@ function checkControlPhase() {
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
   let controlCount = 0;
-  for (let line = 0; line < 3; line++) {
+  for (let line = 0; line < gameState.players[playerId].protocols.length; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
     if (playerValue > opponentValue) controlCount++;
@@ -317,12 +264,13 @@ function checkCompilePhase() {
   const opponentId = playerId === 1 ? 2 : 1;
 
   if (gameState.compileSelectionMode) {
+    // Already waiting on player to pick — do nothing
     return;
   }
 
   const eligibleLines = [];
 
-  for (let line = 0; line < 3; line++) {
+  for (let line = 0; line < gameState.players[playerId].protocols.length; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
     if (playerValue >= 10 && playerValue > opponentValue) {
@@ -430,21 +378,20 @@ function endPhase() {
 function compileProtocol(playerId, lineIndex) {
   console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
 
-  // Move all cards in line to discard piles
+  // Send cards to discard piles
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
   gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
+
+  // Clear the line for both players
   gameState.players[1].lines[lineIndex] = [];
   gameState.players[2].lines[lineIndex] = [];
 
   const protocol = gameState.players[playerId].protocols[lineIndex];
-  const hasCompiledBefore = gameState.compiledProtocols[playerId].includes(protocol);
-
-  if (!hasCompiledBefore) {
+  const compiledAlready = gameState.compiledProtocols[playerId].includes(protocol);
+  if (!compiledAlready) {
     gameState.compiledProtocols[playerId].push(protocol);
-    alert(`Player ${playerId} compiled protocol ${protocol}!`);
   } else {
-    alert(`Player ${playerId} recompiled protocol ${protocol}! Drawing 1 card from opponent's deck.`);
-    // Draw 1 card from opponent's deck
+    // Recompiling an already compiled protocol: draw a card from opponent's deck
     const opponentId = playerId === 1 ? 2 : 1;
     const opponent = gameState.players[opponentId];
     if (opponent.deck.length === 0 && opponent.discard.length > 0) {
@@ -455,17 +402,18 @@ function compileProtocol(playerId, lineIndex) {
       const drawnCard = opponent.deck.pop();
       drawnCard.faceUp = true;
       gameState.players[playerId].hand.push(drawnCard);
-      alert(`Player ${playerId} drew "${drawnCard.name}" from opponent's deck.`);
-    } else {
-      alert("Opponent's deck is empty, no card drawn.");
+      alert(`Player ${playerId} recompiling an already compiled protocol! Drew a card from opponent's deck: ${drawnCard.name}`);
+      renderHand();
     }
   }
+
+  alert(`Player ${playerId} compiled protocol ${protocol}!`);
 
   updateButtonsState();
   renderGameBoard();
   renderHand();
 
-  if (gameState.compiledProtocols[playerId].length === 3) {
+  if (gameState.compiledProtocols[playerId].length === gameState.players[playerId].protocols.length) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
     // TODO: add game end logic here
   }
@@ -475,22 +423,22 @@ function compileProtocol(playerId, lineIndex) {
 }
 
 function triggerEffects(phase) {
-  // TODO: Implement start/end effects here
+  // You can implement Start/End effects here, currently placeholder
 }
 
-// Update buttons enabling/disabling state
 function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
 
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode || gameState.deleteSelectionMode || gameState.fire1DiscardMode) {
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode || gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
     refreshBtn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
     refreshBtn.disabled = hand.length >= 5 || gameState.actionTaken;
   }
+
+  updateDiscardConfirmButton();
 }
 
-// Render player's hand including special selection modes
 function renderHand() {
   const handDiv = document.getElementById('hand');
   handDiv.innerHTML = '';
@@ -507,12 +455,10 @@ function renderHand() {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('card', 'in-hand');
 
-    const isSelected = idx === selectedCardIndex;
-    const faceUpToShow = isSelected ? selectedCardFaceUp : card.faceUp;
+    const faceUpToShow = card.faceUp;
 
     cardDiv.style.borderColor = faceUpToShow ? (card.protocolColor || 'gray') : 'black';
 
-    // Highlight card if in Fire 1 discard selection mode and this card is selected for discard
     if (gameState.fire1DiscardMode) {
       cardDiv.style.cursor = 'pointer';
       if (gameState.fire1DiscardSelectedIndex === idx) {
@@ -538,8 +484,6 @@ function renderHand() {
       cardDiv.classList.remove('face-down');
     }
 
-    cardDiv.style.background = isSelected ? '#555' : '#444';
-
     cardDiv.innerHTML = `
       <div class="card-section card-name">${card.name} (${card.value})</div>
       <div class="card-section card-top">${card.topEffect || ''}</div>
@@ -547,9 +491,16 @@ function renderHand() {
       <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
     `;
 
-    cardDiv.addEventListener('click', async () => {
-      if (gameState.cacheDiscardMode) {
-        // Normal cache discard selection
+    cardDiv.addEventListener('click', () => {
+      if (gameState.fire1DiscardMode) {
+        if (gameState.fire1DiscardSelectedIndex === idx) {
+          gameState.fire1DiscardSelectedIndex = null;
+        } else {
+          gameState.fire1DiscardSelectedIndex = idx;
+        }
+        updateDiscardConfirmButton();
+        renderHand();
+      } else if (gameState.cacheDiscardMode) {
         if (gameState.cacheDiscardSelectedIndices.has(idx)) {
           gameState.cacheDiscardSelectedIndices.delete(idx);
         } else {
@@ -557,14 +508,6 @@ function renderHand() {
         }
         updateDiscardInstruction();
         updateDiscardConfirmButton();
-        renderHand();
-      } else if (gameState.fire1DiscardMode) {
-        // Fire 1 discard selection
-        if (gameState.fire1DiscardSelectedIndex === idx) {
-          gameState.fire1DiscardSelectedIndex = null;
-        } else {
-          gameState.fire1DiscardSelectedIndex = idx;
-        }
         renderHand();
       } else {
         if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
@@ -577,6 +520,10 @@ function renderHand() {
         }
         if (gameState.actionTaken) {
           alert("You already took an action this turn!");
+          return;
+        }
+        if (gameState.deleteSelectionMode || gameState.fire1DiscardMode) {
+          alert("Please complete current selection first.");
           return;
         }
         selectedCardIndex = idx;
@@ -614,12 +561,18 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
     return;
   }
   if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
-    alert("Cannot play cards during special effect selection.");
+    alert("Please complete current selection first.");
     return;
   }
 
   const protocol = gameState.players[playerId].protocols[lineIndex];
-  // Removed block that prevented playing on compiled protocols per your request
+
+  // Now you can play cards even if protocol is compiled
+  // const compiledAlready = gameState.compiledProtocols[playerId].includes(protocol);
+  // if (compiledAlready) {
+  //   alert(`Protocol "${protocol}" is already compiled. You cannot play cards here.`);
+  //   return;
+  // }
 
   const card = gameState.players[playerId].hand[handIndex];
   const cardProtocol = card.name.split(' ')[0];
@@ -645,9 +598,10 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
-  // After playing Fire 1, trigger its effect
-  if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
+  // Check if the played card is Fire 1 and handle its effect
+  if (removedCard.name === "Fire 1" && removedCard.faceUp) {
     handleFire1Effect(removedCard, playerId).then(() => {
+      // After Fire 1 effect completes, proceed to cache phase
       gameState.phase = 'cache';
       runPhase();
     });
@@ -659,7 +613,6 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   }
 }
 
-// Refresh button handler
 document.getElementById('refresh-button').addEventListener('click', () => {
   if (gameState.cacheDiscardMode) {
     alert("You must discard cards before continuing!");
@@ -678,7 +631,7 @@ document.getElementById('refresh-button').addEventListener('click', () => {
     return;
   }
   if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
-    alert("Cannot refresh during special effect selection.");
+    alert("Please complete current selection first.");
     return;
   }
 
@@ -694,14 +647,9 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   }, 100);
 });
 
-// Discard confirm button for normal cache discard
 function setupDiscardConfirmButton() {
   const btn = document.getElementById('discard-confirm-button');
   btn.addEventListener('click', () => {
-    if (gameState.fire1DiscardMode) {
-      alert("Please discard your selected card to continue.");
-      return;
-    }
     const player = gameState.players[gameState.currentPlayer];
     const requiredDiscardCount = player.hand.length - 5;
 
@@ -729,116 +677,40 @@ function setupDiscardConfirmButton() {
   });
 }
 
-// Fire 1 discard confirmation button (separate flow)
-function setupFire1DiscardConfirmButton() {
-  const btn = document.getElementById('fire1-discard-confirm-button');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      if (!gameState.fire1DiscardMode) return;
-      if (gameState.fire1DiscardSelectedIndex === null) {
-        alert("Please select a card to discard.");
-        return;
-      }
-      // Remove the selected card from hand and put in discard pile
-      const player = gameState.players[gameState.currentPlayer];
-      const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
-      player.discard.push(discardedCard);
-      alert(`Discarded card: ${discardedCard.name}`);
-
-      // End discard mode and start delete mode
-      gameState.fire1DiscardMode = false;
-      gameState.fire1DiscardSelectedIndex = null;
-
-      renderHand();
-      updateButtonsState();
-
-      gameState.deleteSelectionMode = true;
-      alert("Select a card on the board to delete.");
-
-      // No automatic phase transition here, wait for player to click card to delete on board
-    });
-  }
-}
-
-// Call this once in initialize or after DOM loaded
-function setupFire1DiscardConfirmUI() {
-  let container = document.getElementById('fire1-discard-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'fire1-discard-container';
-    container.style.marginTop = '10px';
-    container.style.display = 'none';
-
-    const btn = document.createElement('button');
-    btn.id = 'fire1-discard-confirm-button';
-    btn.textContent = 'Confirm Discard';
-    btn.disabled = true;
-    container.appendChild(btn);
-
-    document.body.appendChild(container);
-
-    btn.addEventListener('click', () => {
-      if (!gameState.fire1DiscardMode) return;
-      if (gameState.fire1DiscardSelectedIndex === null) {
-        alert("Please select a card to discard.");
-        return;
-      }
-      // Remove the selected card from hand and put in discard pile
-      const player = gameState.players[gameState.currentPlayer];
-      const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
-      player.discard.push(discardedCard);
-      alert(`Discarded card: ${discardedCard.name}`);
-
-      // End discard mode and start delete mode
-      gameState.fire1DiscardMode = false;
-      gameState.fire1DiscardSelectedIndex = null;
-      container.style.display = 'none';
-
-      renderHand();
-      updateButtonsState();
-
-      gameState.deleteSelectionMode = true;
-      alert("Select a card on the board to delete.");
-    });
-  }
-}
-
 function updateDiscardInstruction() {
-  if (gameState.fire1DiscardMode) {
-    const player = gameState.players[gameState.currentPlayer];
-    const instructionDiv = document.getElementById('discard-instruction');
-    instructionDiv.textContent = `Select 1 card from your hand to discard for Fire 1 effect.`;
-  } else {
-    const player = gameState.players[gameState.currentPlayer];
-    const requiredDiscardCount = player.hand.length - 5;
-    const selectedCount = gameState.cacheDiscardSelectedIndices.size;
-    const instructionDiv = document.getElementById('discard-instruction');
+  const player = gameState.players[gameState.currentPlayer];
+  const requiredDiscardCount = player.hand.length - 5;
+  const selectedCount = gameState.cacheDiscardSelectedIndices.size;
+  const instructionDiv = document.getElementById('discard-instruction');
 
-    instructionDiv.textContent = `Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount}`;
-  }
+  instructionDiv.textContent = `Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount}`;
 }
 
 function updateDiscardConfirmButton() {
   if (gameState.fire1DiscardMode) {
     const btn = document.getElementById('fire1-discard-confirm-button');
-    if (btn) {
-      btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
-      btn.style.display = 'inline-block';
-    }
-    document.getElementById('discard-confirm-button').style.display = 'none';
-  } else {
+    btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
+    btn.style.display = 'inline-block';
+
+    const normalBtn = document.getElementById('discard-confirm-button');
+    if (normalBtn) normalBtn.style.display = 'none';
+  } else if (gameState.cacheDiscardMode) {
+    const btn = document.getElementById('discard-confirm-button');
     const player = gameState.players[gameState.currentPlayer];
     const requiredDiscardCount = player.hand.length - 5;
     const selectedCount = gameState.cacheDiscardSelectedIndices.size;
-
-    const btn = document.getElementById('discard-confirm-button');
     btn.disabled = selectedCount !== requiredDiscardCount;
     btn.style.display = 'inline-block';
 
     const fire1Btn = document.getElementById('fire1-discard-confirm-button');
-    if (fire1Btn) {
-      fire1Btn.style.display = 'none';
-    }
+    if (fire1Btn) fire1Btn.style.display = 'none';
+  } else {
+    const btn = document.getElementById('discard-confirm-button');
+    btn.style.display = 'inline-block';
+    btn.disabled = true;
+
+    const fire1Btn = document.getElementById('fire1-discard-confirm-button');
+    if (fire1Btn) fire1Btn.style.display = 'none';
   }
 }
 
@@ -858,8 +730,8 @@ function updateFlipToggleButton() {
 function setupFlipToggle() {
   const btn = document.getElementById('flip-toggle-button');
   btn.addEventListener('click', () => {
-    if (gameState.cacheDiscardMode || gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
-      alert("Cannot flip cards while discarding or during special effect selections.");
+    if (gameState.cacheDiscardMode) {
+      alert("Cannot flip cards while discarding.");
       return;
     }
     if (selectedCardIndex === null) return;
@@ -871,7 +743,7 @@ function setupFlipToggle() {
 
 function updateRefreshButton() {
   const btn = document.getElementById('refresh-button');
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode || gameState.deleteSelectionMode || gameState.fire1DiscardMode) {
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode || gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
     btn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
@@ -912,18 +784,6 @@ function renderGameBoard() {
         cardDiv.style.zIndex = i + 1;
         cardDiv.style.left = '0';
 
-        // If in deleteSelectionMode, highlight cards clickable for delete
-        if (gameState.deleteSelectionMode) {
-          cardDiv.style.cursor = 'pointer';
-          cardDiv.classList.add('delete-selectable');
-          cardDiv.onclick = () => {
-            handleDeleteSelection(playerId, idx, i, card);
-          };
-        } else {
-          cardDiv.style.cursor = 'default';
-          cardDiv.onclick = null;
-        }
-
         if (cardDiv.classList.contains('covered') && !card.faceUp) {
           cardDiv.innerHTML = '';
         } else {
@@ -935,78 +795,35 @@ function renderGameBoard() {
           `;
         }
 
+        if (gameState.deleteSelectionMode) {
+          cardDiv.style.cursor = 'pointer';
+          cardDiv.addEventListener('click', () => {
+            if (!gameState.deleteSelectionMode) return;
+            // Remove the clicked card from board and put in owner's discard
+            // Determine owner: if playerId is 1 or 2
+            const owner = playerId;
+            gameState.players[owner].lines[idx].splice(i, 1);
+            gameState.players[owner].discard.push(card);
+            alert(`Deleted card: ${card.name} from Player ${owner}'s line ${idx}`);
+
+            renderGameBoard();
+
+            // Exit delete selection mode
+            gameState.deleteSelectionMode = false;
+
+            // Proceed to cache phase if we are still in action phase chain
+            gameState.phase = 'cache';
+            runPhase();
+          }, { once: true });
+        }
+
         lineDiv.appendChild(cardDiv);
       });
 
       const protocol = gameState.players[playerId].protocols[idx];
       const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
-      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) ? 'pointer' : 'default';
+      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) ? 'pointer' : 'default';
     });
-  });
-}
-
-function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
-  if (!gameState.deleteSelectionMode) return;
-  // Delete the selected card: remove from line and add to owner's discard pile
-  let ownerId = null;
-  if (gameState.players[1].lines[lineIndex].includes(card)) ownerId = 1;
-  else if (gameState.players[2].lines[lineIndex].includes(card)) ownerId = 2;
-  else return alert("Card ownership unknown");
-
-  gameState.players[ownerId].lines[lineIndex].splice(cardIndex, 1);
-  gameState.players[ownerId].discard.push(card);
-  alert(`Deleted card: ${card.name}`);
-
-  gameState.deleteSelectionMode = false;
-
-  renderGameBoard();
-  renderHand();
-  updateButtonsState();
-
-  gameState.phase = 'cache';
-  runPhase();
-}
-
-async function handleFire1Effect(card, playerId) {
-  return new Promise((resolve) => {
-    // Show popup modal for Fire 1 card to both players (simulate with alert for now)
-    showCardPopup(card);
-
-    gameState._fire1AfterPopupResolve = () => {
-      const player = gameState.players[playerId];
-
-      if (player.hand.length === 0) {
-        alert("You have no cards to discard, effect ends.");
-        resolve();
-        return;
-      }
-
-      // Start discard selection mode for Fire 1 effect
-      gameState.fire1DiscardMode = true;
-      gameState.fire1DiscardSelectedIndex = null;
-      renderHand();
-      updateButtonsState();
-      updateDiscardInstruction();
-      updateDiscardConfirmButton();
-
-      // Show Fire 1 discard confirm UI
-      let container = document.getElementById('fire1-discard-container');
-      if (!container) setupFire1DiscardConfirmUI();
-      document.getElementById('fire1-discard-container').style.display = 'block';
-
-      // Wait for discard confirmation button to be pressed to continue
-      const checkDiscardConfirmed = setInterval(() => {
-        if (!gameState.fire1DiscardMode) {
-          clearInterval(checkDiscardConfirmed);
-          document.getElementById('fire1-discard-container').style.display = 'none';
-
-          // Enter delete selection mode
-          gameState.deleteSelectionMode = true;
-          alert("Select a card on the board to delete.");
-          resolve();
-        }
-      }, 200);
-    };
   });
 }
 
@@ -1031,7 +848,99 @@ function updateTurnUI() {
   updateButtonsState();
 }
 
-// Call setup for Fire 1 discard confirm button UI when DOM content is ready
+//
+// Fire 1 effect handling
+//
+
+function showCardPopup(card) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('card-popup-modal');
+    const nameElem = document.getElementById('popup-card-name');
+    const textElem = document.getElementById('popup-card-text');
+    const ackCountElem = document.getElementById('popup-ack-count');
+
+    nameElem.textContent = card.name;
+    // Show all effects combined clearly:
+    let fullText = "";
+    if (card.topEffect) fullText += `Top Effect: ${card.topEffect}\n`;
+    if (card.middleEffect) fullText += `Middle Effect: ${card.middleEffect}\n`;
+    if (card.bottomEffect) fullText += `Bottom Effect: ${card.bottomEffect}\n`;
+    textElem.textContent = fullText.trim();
+
+    modal.style.display = 'block';
+    let ackCount = 0;
+    ackCountElem.textContent = `${ackCount}/2`;
+
+    function onClick() {
+      ackCount++;
+      if (ackCount >= 2) {
+        modal.style.display = 'none';
+        modal.removeEventListener('click', onClick);
+        resolve();
+      } else {
+        ackCountElem.textContent = `${ackCount}/2`;
+      }
+    }
+
+    modal.addEventListener('click', onClick);
+  });
+}
+
+async function handleFire1Effect(card, playerId) {
+  await showCardPopup(card);
+
+  const player = gameState.players[playerId];
+  if (player.hand.length === 0) {
+    alert("You have no cards to discard, effect ends.");
+    return;
+  }
+
+  // Enter discard selection mode
+  gameState.fire1DiscardMode = true;
+  gameState.fire1DiscardSelectedIndex = null;
+  renderHand();
+  updateButtonsState();
+  updateDiscardInstruction();
+  updateDiscardConfirmButton();
+
+  const container = document.getElementById('fire1-discard-container');
+  container.style.display = 'block';
+
+  // Wait for discard confirm click to continue handled by setupFire1DiscardConfirmUI()
+}
+
+function setupFire1DiscardConfirmUI() {
+  const container = document.getElementById('fire1-discard-container');
+  const btn = document.getElementById('fire1-discard-confirm-button');
+
+  if (btn && !btn.hasSetup) {
+    btn.addEventListener('click', () => {
+      if (!gameState.fire1DiscardMode) return;
+      if (gameState.fire1DiscardSelectedIndex === null) {
+        alert("Please select a card to discard.");
+        return;
+      }
+      const player = gameState.players[gameState.currentPlayer];
+      const discardedCard = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
+      player.discard.push(discardedCard);
+      alert(`Discarded card: ${discardedCard.name}`);
+
+      // Exit discard mode
+      gameState.fire1DiscardMode = false;
+      gameState.fire1DiscardSelectedIndex = null;
+      container.style.display = 'none';
+
+      renderHand();
+      updateButtonsState();
+
+      // Enter delete selection mode
+      gameState.deleteSelectionMode = true;
+      alert("Select a card on the board to delete.");
+    });
+    btn.hasSetup = true;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   setupFire1DiscardConfirmUI();
 });
