@@ -13,7 +13,7 @@ const protocolColors = {
 const gameState = {
   players: {
     1: {
-      protocols: ['Life', 'Light', 'Psychic', 'Fire'], // added Fire protocol here for testing
+      protocols: ['Life', 'Light', 'Fire'], // added Fire protocol here for testing
       lines: [[], [], [], []], // added 4th line for Fire protocol
       hand: [],
       deck: [],
