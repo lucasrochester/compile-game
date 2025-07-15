@@ -638,9 +638,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   // Special Fire 1 effect handling:
   if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
     await handleFire1Effect(removedCard, playerId);
-    // After effect resolution, end turn properly
-    gameState.phase = 'end';
-    runPhase();
+    // Removed redundant end phase call here since it's handled in handleFire1Effect
   } else {
     setTimeout(() => {
       gameState.phase = 'cache';
@@ -958,6 +956,7 @@ async function handleFire1Effect(card, playerId) {
 
       if (player.hand.length === 0) {
         alert("You have no cards to discard, effect ends.");
+        finishFire1Effect();
         resolve();
         return;
       }
@@ -979,11 +978,18 @@ async function handleFire1Effect(card, playerId) {
         originalHandleDeleteSelection(playerId, lineIndex, cardIndex, card);
         if (!gameState.deleteSelectionMode && !gameState.fire1DiscardMode) {
           // Effect fully resolved after deletion
+          finishFire1Effect();
           resolve();
           // Restore original handler to avoid patch stacking
           handleDeleteSelection = originalHandleDeleteSelection;
         }
       };
+
+      function finishFire1Effect() {
+        gameState.actionTaken = true;  // lock further actions this turn
+        gameState.phase = 'end';        // go to end phase (switch player next)
+        runPhase();
+      }
     };
   });
 }
