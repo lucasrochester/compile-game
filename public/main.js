@@ -155,8 +155,8 @@ function setupLineClickDelegation() {
         alert("You must discard cards before continuing!");
         return;
       }
+      // Removed alert "You already took an action this turn!" here; silently ignore if actionTaken
       if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
-        alert("You already took an action this turn!");
         return;
       }
       if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
@@ -561,8 +561,8 @@ function renderHand() {
           alert("Please select a protocol to compile first.");
           return;
         }
+        // Removed alert "You already took an action this turn!" here - silently ignore multiple selection attempts
         if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
-          alert("You already took an action this turn!");
           return;
         }
         selectedCardIndex = idx;
@@ -587,8 +587,8 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
     alert("It's not this player's turn!");
     return;
   }
+  // Removed alert "You already took an action this turn!" here - silently ignore
   if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
-    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[playerId] !== null) {
@@ -634,7 +634,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   // Special Fire 1 effect handling:
   if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
     await handleFire1Effect(removedCard, playerId);
-    // Removed redundant end phase call here since it's handled in handleFire1Effect
+    // End phase handled in handleFire1Effect
   } else {
     setTimeout(() => {
       gameState.phase = 'cache';
@@ -648,8 +648,8 @@ document.getElementById('refresh-button').addEventListener('click', () => {
     alert("You must discard cards before continuing!");
     return;
   }
+  // Removed alert "You already took an action this turn!" here - silently ignore
   if (gameState.actionTaken && !gameState.fire1DiscardMode && !gameState.deleteSelectionMode) {
-    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
@@ -936,13 +936,8 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   renderHand();
   updateButtonsState();
 
-  // Fix here: jump to end phase after Fire1 deletion, not cache phase
-  if (gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
-    // still in Fire1 mode, don't change phase yet
-    return;
-  }
-
-  gameState.phase = 'end';
+  // After deletion, proceed to cache phase (or next as needed)
+  gameState.phase = 'cache';
   runPhase();
 }
 
