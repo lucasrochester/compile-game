@@ -5,6 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Compile Game</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Modal styles for card popup */
+    #card-popup-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.9);
+      color: #eee;
+      font-size: 18px;
+      text-align: center;
+      padding: 40px;
+      z-index: 9999;
+      cursor: pointer;
+      user-select: none;
+      overflow-y: auto;
+    }
+    #card-popup-modal h2 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+    #card-popup-modal pre {
+      white-space: pre-wrap;
+      margin-top: 20px;
+      font-size: 16px;
+      line-height: 1.4;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #card-popup-modal div {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    /* Fire 1 discard confirm container styles */
+    #fire1-discard-container {
+      border: 1px solid #555;
+      padding: 10px;
+      margin-top: 10px;
+      background: #333;
+      max-width: 300px;
+      color: #eee;
+      font-size: 14px;
+      border-radius: 6px;
+    }
+    #fire1-discard-container button {
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      border: none;
+      background: #f60;
+      color: #fff;
+    }
+    #fire1-discard-container button:disabled {
+      background: #a44;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 <body>
   <h1>Compile Game</h1>
@@ -45,6 +111,20 @@
   <div id="discard-confirm-container" style="margin-top:10px; display:none;">
     <button id="discard-confirm-button" disabled>Confirm Discard</button>
     <div id="discard-instruction" style="margin-top:5px; font-size:14px; color:#ccc;"></div>
+  </div>
+
+  <!-- Fire 1 discard confirm container (dynamically shown) -->
+  <div id="fire1-discard-container" style="display:none;">
+    <button id="fire1-discard-confirm-button" disabled>Confirm Discard</button>
+  </div>
+
+  <!-- Card Popup Modal for showing card details (Fire 1 popup) -->
+  <div id="card-popup-modal">
+    <h2 id="popup-card-name"></h2>
+    <pre id="popup-card-text"></pre>
+    <div>
+      Click to acknowledge (<span id="popup-ack-count">0</span>/2)
+    </div>
   </div>
 
   <script src="main.js"></script>
