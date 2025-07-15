@@ -40,13 +40,20 @@ const gameState = {
   deleteSelectionMode: false,
   fire1DiscardMode: false,
   fire1DiscardSelectedIndex: null,
+  waitingForFire1Resolution: false,
 };
 
 let selectedCardIndex = null;
 let selectedCardFaceUp = false;
 let cardPopupAckCount = 0;
 
-// -------------------- UI & Game Logic --------------------
+function checkFire1Lock() {
+  if (gameState.waitingForFire1Resolution) {
+    alert("You must complete the Fire 1 effect before doing anything else.");
+    return true;
+  }
+  return false;
+}
 
 function showCardPopup(card) {
   cardPopupAckCount = 0;
@@ -151,6 +158,7 @@ function setupLineClickDelegation() {
     const playerId = parseInt(pidStr.replace('player', ''));
     const container = document.querySelector(`#${pidStr} .lines`);
     container.addEventListener('click', async (e) => {
+      if (checkFire1Lock()) return;
       if (gameState.cacheDiscardMode) {
         alert("You must discard cards before continuing!");
         return;
@@ -238,6 +246,7 @@ function startTurn() {
   gameState.deleteSelectionMode = false;
   gameState.fire1DiscardMode = false;
   gameState.fire1DiscardSelectedIndex = null;
+  gameState.waitingForFire1Resolution = false;
   updateTurnUI();
 
   const mustCompileLine = gameState.mustCompileLineNextTurn[gameState.currentPlayer];
@@ -474,7 +483,9 @@ function triggerEffects(phase) {
 function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
 
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode || gameState.deleteSelectionMode || gameState.fire1DiscardMode) {
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null ||
+      gameState.compileSelectionMode || gameState.deleteSelectionMode || gameState.fire1DiscardMode ||
+      gameState.waitingForFire1Resolution) {
     refreshBtn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
@@ -538,6 +549,7 @@ function renderHand() {
     `;
 
     cardDiv.addEventListener('click', async () => {
+      if (checkFire1Lock()) return;
       if (gameState.cacheDiscardMode) {
         if (gameState.cacheDiscardSelectedIndices.has(idx)) {
           gameState.cacheDiscardSelectedIndices.delete(idx);
@@ -583,6 +595,7 @@ function renderHand() {
 }
 
 async function playCardOnLine(playerId, handIndex, lineIndex) {
+  if (checkFire1Lock()) return;
   if (gameState.cacheDiscardMode) {
     alert("You must discard cards before continuing!");
     return;
@@ -628,16 +641,19 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   selectedCardFaceUp = false;
   updateFlipToggleButton();
 
-  // Mark that player has taken their action
+  // Mark that player has taken their action and lock turn for Fire1 effect if applicable
   gameState.actionTaken = true;
+  if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
+    gameState.waitingForFire1Resolution = true;
+  }
 
   renderGameBoard();
   renderHand();
   updateButtonsState();
 
-  // Special Fire 1 effect handling:
   if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
     await handleFire1Effect(removedCard, playerId);
+    gameState.waitingForFire1Resolution = false;
     gameState.phase = 'cache';
     runPhase();
   } else {
@@ -649,6 +665,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
 }
 
 document.getElementById('refresh-button').addEventListener('click', () => {
+  if (checkFire1Lock()) return;
   if (gameState.cacheDiscardMode) {
     alert("You must discard cards before continuing!");
     return;
@@ -798,6 +815,7 @@ function updateFlipToggleButton() {
 function setupFlipToggle() {
   const btn = document.getElementById('flip-toggle-button');
   btn.addEventListener('click', () => {
+    if (checkFire1Lock()) return;
     if (gameState.cacheDiscardMode || gameState.fire1DiscardMode || gameState.deleteSelectionMode) {
       alert("Cannot flip cards while discarding or during special effect selections.");
       return;
@@ -811,7 +829,9 @@ function setupFlipToggle() {
 
 function updateRefreshButton() {
   const btn = document.getElementById('refresh-button');
-  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null || gameState.compileSelectionMode || gameState.deleteSelectionMode || gameState.fire1DiscardMode) {
+  if (gameState.cacheDiscardMode || gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null ||
+      gameState.compileSelectionMode || gameState.deleteSelectionMode || gameState.fire1DiscardMode ||
+      gameState.waitingForFire1Resolution) {
     btn.disabled = true;
   } else {
     const hand = gameState.players[gameState.currentPlayer].hand;
@@ -862,7 +882,6 @@ function renderGameBoard() {
               handleDeleteSelection(playerId, idx, i, card);
             };
           } else {
-            // Disable clicking covered cards in delete mode
             cardDiv.onclick = () => {
               alert("You can only delete the top card of a stack.");
             };
@@ -946,8 +965,7 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   runPhase();
 }
 
-// ----- Fire 1 effect handling -----
-
+// Fire 1 effect handling
 async function handleFire1Effect(card, playerId) {
   return new Promise((resolve) => {
     showCardPopup(card);
