@@ -51,15 +51,6 @@ function shuffle(array) {
   }
 }
 
-function findCard(protocol, value) {
-  if (!allCardsData) return null;
-  const protocolData = allCardsData.protocols[protocol];
-  if (!protocolData) return null;
-  const card = protocolData.cards.find(c => c.value === value);
-  if (card) card.protocolColor = protocolColors[protocol];
-  return card;
-}
-
 function initializeGame() {
   [1, 2].forEach(pid => {
     const player = gameState.players[pid];
@@ -183,6 +174,7 @@ function checkCompile() {
   for (let line = 0; line < 3; line++) {
     const playerValue = lineTotalValue(playerId, line);
     const opponentValue = lineTotalValue(opponentId, line);
+    console.log(`Line ${line}: player=${playerValue}, opponent=${opponentValue}`);
     if (playerValue >= 10 && playerValue > opponentValue) {
       gameState.mustCompileLine = line;
       break;
@@ -201,24 +193,20 @@ function checkCompile() {
 
 function actionPhase() {
   console.log('Action phase');
-  if (gameState.mustCompileLine !== null) {
-    // Should not happen because compile triggers automatically and ends turn
-    return;
-  }
   updateButtonsState();
-  // Here you allow player to play cards or refresh hand
+  // Player can play cards or refresh hand here
 }
 
 function compileProtocol(playerId, lineIndex) {
   console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
 
-  // Discard cards on both sides in the line
+  // Discard cards from both players in that line
   gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
   gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
   gameState.players[1].lines[lineIndex] = [];
   gameState.players[2].lines[lineIndex] = [];
 
-  // Mark compiled protocol
+  // Mark protocol as compiled
   const protocol = gameState.players[playerId].protocols[lineIndex];
   if (!gameState.compiledProtocols[playerId].includes(protocol)) {
     gameState.compiledProtocols[playerId].push(protocol);
@@ -235,7 +223,7 @@ function compileProtocol(playerId, lineIndex) {
 
   if (gameState.compiledProtocols[playerId].length === 3) {
     alert(`Player ${playerId} wins by compiling all protocols!`);
-    // TODO: Handle game end (disable input or reset game)
+    // TODO: Implement end game logic here (disable inputs, show reset, etc)
   }
 
   endPhase();
@@ -250,13 +238,13 @@ function endPhase() {
   renderGameBoard();
   renderHand();
 
-  // Switch to next player
+  // Switch player
   gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
   startTurn();
 }
 
 function triggerEffects(phase) {
-  // Stub for effect processing
+  // Stub for card effects on start/end etc.
 }
 
 function updateButtonsState() {
@@ -296,7 +284,6 @@ function renderGameBoard() {
 
         if (!card.faceUp) cardDiv.classList.add('face-down');
 
-        // Covered means not the top card in the stack
         if (i < cards.length - 1) cardDiv.classList.add('covered');
 
         cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
@@ -425,4 +412,5 @@ function updateRefreshButton() {
   const hand = gameState.players[gameState.currentPlayer].hand;
   btn.disabled = hand.length >= 5;
 }
+
 
