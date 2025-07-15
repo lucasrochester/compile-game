@@ -6,7 +6,7 @@ const protocolColors = {
   Psychic: 'purple',
   Speed: 'white',
   Gravity: 'pink',
-  Darkness: 'black',
+  Darkness: 'darkslategray',
 };
 
 const gameState = {
