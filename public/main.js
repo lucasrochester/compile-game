@@ -619,6 +619,9 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
     return;
   }
 
+  // Mark that player has taken their action first
+  gameState.actionTaken = true;
+
   const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
   removedCard.faceUp = selectedCardFaceUp;
 
@@ -628,9 +631,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   selectedCardFaceUp = false;
   updateFlipToggleButton();
 
-  // Mark that player has taken their action
-  gameState.actionTaken = true;
-
   renderGameBoard();
   renderHand();
   updateButtonsState();
@@ -638,7 +638,8 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   // Special Fire 1 effect handling:
   if (removedCard.name === 'Fire 1' && removedCard.faceUp) {
     await handleFire1Effect(removedCard, playerId);
-    gameState.phase = 'cache';
+    // After effect resolution, end turn properly
+    gameState.phase = 'end';
     runPhase();
   } else {
     setTimeout(() => {
