@@ -95,11 +95,11 @@ function setupLineClickDelegation() {
     const container = document.querySelector(`#${pidStr} .lines`);
     container.addEventListener('click', (e) => {
       if (gameState.phase !== 'action' || gameState.cacheDiscardMode || gameState.compileSelectionMode) {
-        console.log('Line click ignored: phase', gameState.phase);
+        // Not action phase or busy — ignore clicks on lines
         return;
       }
       if (playerId !== gameState.currentPlayer) {
-        console.log('Line click ignored: not current player');
+        // Can't play on opponent's lines
         return;
       }
 
@@ -162,6 +162,7 @@ function startTurn() {
   updateFlipToggleButton();
   updateTurnUI();
 
+  // Check if forced compile is needed at turn start
   const mustCompileLine = gameState.mustCompileLineNextTurn[gameState.currentPlayer];
   if (mustCompileLine !== null) {
     const playerId = gameState.currentPlayer;
@@ -184,27 +185,32 @@ function startTurn() {
 
 function runPhase() {
   switch (gameState.phase) {
-    case 'start': startPhase(); break;
-    case 'control': checkControlPhase(); break;
-    case 'compile': checkCompilePhase(); break;
-    case 'compileForced': forcedCompilePhase(); break;
-    case 'action': actionPhase(); break;
-    case 'cache': cachePhase(); break;
-    case 'end': endPhase(); break;
+    case 'start':
+      startPhase();
+      break;
+    case 'control':
+      checkControlPhase();
+      break;
+    case 'compile':
+      checkCompilePhase();
+      break;
+    case 'compileForced':
+      forcedCompilePhase();
+      break;
+    case 'action':
+      actionPhase();
+      break;
+    case 'cache':
+      cachePhase();
+      break;
+    case 'end':
+      endPhase();
+      break;
   }
 }
 
-function nextPhase() {
-  const phases = ['start', 'control', 'compile', 'action', 'cache', 'end'];
-  const currentIndex = phases.indexOf(gameState.phase);
-  if (currentIndex < phases.length - 1) {
-    gameState.phase = phases[currentIndex + 1];
-    runPhase();
-  } else {
-    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-    startTurn();
-  }
-}
+// --- AUTOMATIC PHASES ---
+// These phases run immediately one after another with no player input.
 
 function startPhase() {
   console.log('Start phase');
@@ -235,7 +241,10 @@ function checkCompilePhase() {
   const playerId = gameState.currentPlayer;
   const opponentId = playerId === 1 ? 2 : 1;
 
-  if (gameState.compileSelectionMode) return; // waiting on user selection
+  if (gameState.compileSelectionMode) {
+    // Waiting on player to choose protocol to compile
+    return;
+  }
 
   const eligibleLines = [];
   for (let line = 0; line < 3; line++) {
@@ -245,6 +254,7 @@ function checkCompilePhase() {
   }
 
   if (eligibleLines.length === 0) {
+    // No compile needed, move to action immediately
     gameState.mustCompileLineNextTurn[playerId] = null;
     gameState.phase = 'action';
     runPhase();
@@ -252,10 +262,95 @@ function checkCompilePhase() {
     alert(`Auto-compiling protocol "${gameState.players[playerId].protocols[eligibleLines[0]]}"`);
     compileProtocol(playerId, eligibleLines[0]);
   } else {
+    // Multiple lines qualify, wait for player selection
     gameState.compileSelectionMode = true;
     gameState.compileEligibleLines = eligibleLines;
     promptCompileSelection(playerId, eligibleLines);
   }
+}
+
+function forcedCompilePhase() {
+  const playerId = gameState.currentPlayer;
+  const line = gameState.mustCompileLineNextTurn[playerId];
+  compileProtocol(playerId, line);
+  gameState.mustCompileLineNextTurn[playerId] = null;
+}
+
+// --- PLAYER INTERACTION PHASES ---
+
+function actionPhase() {
+  console.log('Action phase');
+  updateButtonsState();
+  // Wait for player to play exactly one card OR refresh
+}
+
+function cachePhase() {
+  console.log('Cache phase');
+  const player = gameState.players[gameState.currentPlayer];
+  if (player.hand.length <= 5) {
+    // No discard needed, move to end phase immediately
+    gameState.phase = 'end';
+    runPhase();
+    return;
+  }
+  // Must discard cards
+  gameState.cacheDiscardMode = true;
+  gameState.cacheDiscardSelectedIndices.clear();
+  document.getElementById('discard-confirm-container').style.display = 'block';
+  updateDiscardInstruction();
+  updateDiscardConfirmButton();
+  renderHand();
+}
+
+function endPhase() {
+  console.log('End phase');
+  triggerEffects('End');
+  gameState.cacheDiscardMode = false;
+  document.getElementById('discard-confirm-container').style.display = 'none';
+  gameState.cacheDiscardSelectedIndices.clear();
+  selectedCardIndex = null;
+  selectedCardFaceUp = false;
+  updateFlipToggleButton();
+  renderGameBoard();
+  renderHand();
+  updateButtonsState();
+  // Switch player and restart phases after a brief delay
+  setTimeout(() => {
+    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+    startTurn();
+  }, 500);
+}
+
+// --- CORE GAMEPLAY FUNCTIONS ---
+
+function compileProtocol(playerId, lineIndex) {
+  console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
+
+  // Move all cards from both sides' lines to their owners' discard piles
+  gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
+  gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
+  gameState.players[1].lines[lineIndex] = [];
+  gameState.players[2].lines[lineIndex] = [];
+
+  const protocol = gameState.players[playerId].protocols[lineIndex];
+  if (!gameState.compiledProtocols[playerId].includes(protocol)) {
+    gameState.compiledProtocols[playerId].push(protocol);
+  }
+
+  alert(`Player ${playerId} compiled protocol ${protocol}!`);
+
+  updateButtonsState();
+  renderGameBoard();
+  renderHand();
+
+  if (gameState.compiledProtocols[playerId].length === 3) {
+    alert(`Player ${playerId} wins by compiling all protocols!`);
+    // TODO: game end logic
+  }
+
+  // After compile, move immediately to Cache phase
+  gameState.phase = 'cache';
+  runPhase();
 }
 
 function promptCompileSelection(playerId, lines) {
@@ -285,98 +380,7 @@ function promptCompileSelection(playerId, lines) {
   compileProtocol(playerId, choice);
 }
 
-function forcedCompilePhase() {
-  const playerId = gameState.currentPlayer;
-  const line = gameState.mustCompileLineNextTurn[playerId];
-  compileProtocol(playerId, line);
-  gameState.mustCompileLineNextTurn[playerId] = null;
-}
-
-function actionPhase() {
-  console.log('Action phase');
-  updateButtonsState();
-  // No blocking for multiple actions — inputs disabled outside action phase
-}
-
-function cachePhase() {
-  console.log('Cache phase');
-  const player = gameState.players[gameState.currentPlayer];
-  if (player.hand.length <= 5) {
-    gameState.phase = 'end';
-    runPhase();
-    return;
-  }
-  gameState.cacheDiscardMode = true;
-  gameState.cacheDiscardSelectedIndices.clear();
-  document.getElementById('discard-confirm-container').style.display = 'block';
-  updateDiscardInstruction();
-  updateDiscardConfirmButton();
-  renderHand();
-}
-
-function endPhase() {
-  console.log('End phase');
-  triggerEffects('End');
-  gameState.cacheDiscardMode = false;
-  document.getElementById('discard-confirm-container').style.display = 'none';
-  gameState.cacheDiscardSelectedIndices.clear();
-  selectedCardIndex = null;
-  selectedCardFaceUp = false;
-  updateFlipToggleButton();
-  renderGameBoard();
-  renderHand();
-  updateButtonsState();
-  setTimeout(() => {
-    gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-    startTurn();
-  }, 500);
-}
-
-function compileProtocol(playerId, lineIndex) {
-  console.log(`Compiling protocol on line ${lineIndex} for player ${playerId}`);
-
-  gameState.players[1].lines[lineIndex].forEach(c => gameState.players[1].discard.push(c));
-  gameState.players[2].lines[lineIndex].forEach(c => gameState.players[2].discard.push(c));
-  gameState.players[1].lines[lineIndex] = [];
-  gameState.players[2].lines[lineIndex] = [];
-
-  const protocol = gameState.players[playerId].protocols[lineIndex];
-  if (!gameState.compiledProtocols[playerId].includes(protocol)) {
-    gameState.compiledProtocols[playerId].push(protocol);
-  }
-
-  alert(`Player ${playerId} compiled protocol ${protocol}!`);
-
-  updateButtonsState();
-  renderGameBoard();
-  renderHand();
-
-  if (gameState.compiledProtocols[playerId].length === 3) {
-    alert(`Player ${playerId} wins by compiling all protocols!`);
-    // TODO: add game end logic here
-  }
-
-  gameState.phase = 'cache';
-  runPhase();
-}
-
-function triggerCardEffect(card, effectType) {
-  if (!card || !card.faceUp) return;
-  const effectText = card[effectType.toLowerCase() + 'Effect'];
-  if (!effectText) return;
-  console.log(`Triggering ${effectType} effect of card "${card.name}": ${effectText}`);
-  // TODO: parse and execute effects
-}
-
-function triggerTopEffects() {
-  [1, 2].forEach(playerId => {
-    for (let line = 0; line < 3; line++) {
-      gameState.players[playerId].lines[line].forEach(card => {
-        if (card.faceUp) triggerCardEffect(card, 'top');
-      });
-    }
-  });
-}
+// --- CARD PLAYING AND HAND MANAGEMENT ---
 
 function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode || gameState.compileSelectionMode) return;
@@ -421,7 +425,7 @@ function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
-  // Immediately advance to cache phase after action
+  // After player action, immediately move to Cache phase
   gameState.phase = 'cache';
   runPhase();
 }
@@ -438,10 +442,50 @@ document.getElementById('refresh-button').addEventListener('click', () => {
   renderHand();
   updateButtonsState();
 
-  // Immediately advance to cache phase after refresh
+  // After refresh, immediately move to Cache phase
   gameState.phase = 'cache';
   runPhase();
 });
+
+// --- EFFECTS & UTILITIES ---
+
+function triggerCardEffect(card, effectType) {
+  if (!card || !card.faceUp) return;
+  const effectText = card[effectType.toLowerCase() + 'Effect'];
+  if (!effectText) return;
+  console.log(`Triggering ${effectType} effect of card "${card.name}": ${effectText}`);
+  // TODO: Implement effect parsing and execution here
+}
+
+function triggerTopEffects() {
+  [1, 2].forEach(playerId => {
+    for (let line = 0; line < 3; line++) {
+      gameState.players[playerId].lines[line].forEach(card => {
+        if (card.faceUp) triggerCardEffect(card, 'top');
+      });
+    }
+  });
+}
+
+function drawCard(playerId) {
+  const player = gameState.players[playerId];
+  if (player.deck.length === 0) {
+    if (player.discard.length === 0) return null;
+    player.deck = player.discard.splice(0);
+    shuffle(player.deck);
+  }
+  const card = player.deck.pop();
+  card.faceUp = true;
+  player.hand.push(card);
+  return card;
+}
+
+function refreshHand(playerId) {
+  const player = gameState.players[playerId];
+  while (player.hand.length < 5) {
+    if (!drawCard(playerId)) break;
+  }
+}
 
 function flipCard(card, playerId, lineIndex = null, cardIndexInLine = null) {
   card.faceUp = !card.faceUp;
@@ -456,15 +500,6 @@ function flipCard(card, playerId, lineIndex = null, cardIndexInLine = null) {
   }
 }
 
-function handleUncover(playerId, lineIndex) {
-  const line = gameState.players[playerId].lines[lineIndex];
-  if (line.length === 0) return;
-  const topCard = line[line.length - 1];
-  if (topCard.faceUp) {
-    triggerCardEffect(topCard, 'middle');
-  }
-}
-
 function setupFlipToggle() {
   const btn = document.getElementById('flip-toggle-button');
   btn.addEventListener('click', () => {
@@ -475,7 +510,7 @@ function setupFlipToggle() {
     if (selectedCardIndex === null) return;
     const player = gameState.players[gameState.currentPlayer];
     const card = player.hand[selectedCardIndex];
-    flipCard(card, gameState.currentPlayer, null, null);
+    flipCard(card, gameState.currentPlayer);
     selectedCardFaceUp = card.faceUp;
     updateFlipToggleButton();
     renderHand();
@@ -547,11 +582,15 @@ function updateButtonsState() {
   const refreshBtn = document.getElementById('refresh-button');
   const handCards = document.querySelectorAll('#hand .card');
 
-  const inActionPhase = gameState.phase === 'action' && !gameState.cacheDiscardMode && !gameState.compileSelectionMode && gameState.mustCompileLineNextTurn[gameState.currentPlayer] === null;
+  // Enable inputs ONLY in Action phase for current player and when no blocking modes are active
+  const inActionPhase = gameState.phase === 'action' &&
+    !gameState.cacheDiscardMode &&
+    !gameState.compileSelectionMode &&
+    gameState.mustCompileLineNextTurn[gameState.currentPlayer] === null;
 
   refreshBtn.disabled = !inActionPhase || gameState.players[gameState.currentPlayer].hand.length >= 5;
 
-  handCards.forEach((cardDiv, idx) => {
+  handCards.forEach(cardDiv => {
     if (inActionPhase) {
       cardDiv.style.pointerEvents = 'auto';
       cardDiv.style.opacity = '1';
