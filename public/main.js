@@ -148,6 +148,8 @@ function initializeGame() {
 
   setupLineClickDelegation();
   setupDiscardConfirmButton();
+  setupFire1DiscardConfirmUI();
+  setupHandClickDelegation(); // NEW: Setup hand click delegation here
 }
 
 function setupLineClickDelegation() {
@@ -207,6 +209,58 @@ function setupLineClickDelegation() {
       renderHand();
       updateButtonsState();
     });
+  });
+}
+
+// NEW: Use event delegation for hand clicks
+function setupHandClickDelegation() {
+  const handDiv = document.getElementById('hand');
+  handDiv.addEventListener('click', (e) => {
+    const cardDiv = e.target.closest('.card');
+    if (!cardDiv) return;
+
+    const idx = Array.from(cardDiv.parentNode.children).indexOf(cardDiv);
+
+    if (gameState.fire1DiscardMode) {
+      if (gameState.fire1DiscardSelectedIndex === idx) {
+        gameState.fire1DiscardSelectedIndex = null;
+      } else {
+        gameState.fire1DiscardSelectedIndex = idx;
+      }
+      renderHand();
+      updateDiscardConfirmButton();
+      updateDiscardInstruction();
+      return;
+    }
+
+    if (gameState.cacheDiscardMode) {
+      if (gameState.cacheDiscardSelectedIndices.has(idx)) {
+        gameState.cacheDiscardSelectedIndices.delete(idx);
+      } else {
+        gameState.cacheDiscardSelectedIndices.add(idx);
+      }
+      renderHand();
+      updateDiscardConfirmButton();
+      updateDiscardInstruction();
+      return;
+    }
+
+    if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
+      alert("You must compile your protocol this turn; no other actions allowed.");
+      return;
+    }
+    if (gameState.compileSelectionMode) {
+      alert("Please select a protocol to compile first.");
+      return;
+    }
+    if (gameState.actionTaken) {
+      alert("You already took an action this turn!");
+      return;
+    }
+    selectedCardIndex = idx;
+    selectedCardFaceUp = gameState.players[gameState.currentPlayer].hand[idx].faceUp;
+    updateFlipToggleButton();
+    renderHand();
   });
 }
 
@@ -547,44 +601,7 @@ function renderHand() {
       <div class="card-section card-bottom">${card.bottomEffect || ''}</div>
     `;
 
-    cardDiv.addEventListener('click', async () => {
-      if (gameState.cacheDiscardMode) {
-        // Normal cache discard selection
-        if (gameState.cacheDiscardSelectedIndices.has(idx)) {
-          gameState.cacheDiscardSelectedIndices.delete(idx);
-        } else {
-          gameState.cacheDiscardSelectedIndices.add(idx);
-        }
-        updateDiscardInstruction();
-        updateDiscardConfirmButton();
-        renderHand();
-      } else if (gameState.fire1DiscardMode) {
-        // Fire 1 discard selection
-        if (gameState.fire1DiscardSelectedIndex === idx) {
-          gameState.fire1DiscardSelectedIndex = null;
-        } else {
-          gameState.fire1DiscardSelectedIndex = idx;
-        }
-        renderHand();
-      } else {
-        if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
-          alert("You must compile your protocol this turn; no other actions allowed.");
-          return;
-        }
-        if (gameState.compileSelectionMode) {
-          alert("Please select a protocol to compile first.");
-          return;
-        }
-        if (gameState.actionTaken) {
-          alert("You already took an action this turn!");
-          return;
-        }
-        selectedCardIndex = idx;
-        selectedCardFaceUp = card.faceUp;
-        updateFlipToggleButton();
-        renderHand();
-      }
-    });
+    // Removed individual card event listeners here (delegated instead)
 
     handDiv.appendChild(cardDiv);
   });
@@ -992,13 +1009,13 @@ async function handleFire1Effect(card, playerId) {
       // Show Fire 1 discard confirm UI
       let container = document.getElementById('fire1-discard-container');
       if (!container) setupFire1DiscardConfirmUI();
-      document.getElementById('fire1-discard-container').style.display = 'block';
+      container.style.display = 'block';
 
       // Wait for discard confirmation button to be pressed to continue
       const checkDiscardConfirmed = setInterval(() => {
         if (!gameState.fire1DiscardMode) {
           clearInterval(checkDiscardConfirmed);
-          document.getElementById('fire1-discard-container').style.display = 'none';
+          container.style.display = 'none';
 
           // Enter delete selection mode
           gameState.deleteSelectionMode = true;
