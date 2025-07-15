@@ -514,12 +514,14 @@ function renderHand() {
 
     // Highlight card if in Fire 1 discard selection mode and this card is selected for discard
     if (gameState.fire1DiscardMode) {
-      cardDiv.style.cursor = 'pointer';
-      if (gameState.fire1DiscardSelectedIndex === idx) {
-        cardDiv.classList.add('discard-select');
-      } else {
-        cardDiv.classList.remove('discard-select');
-      }
+  if (gameState.fire1DiscardSelectedIndex === idx) {
+    gameState.fire1DiscardSelectedIndex = null;
+  } else {
+    gameState.fire1DiscardSelectedIndex = idx;
+  }
+  updateDiscardConfirmButton();
+  updateDiscardInstruction();
+  renderHand();
     } else if (gameState.cacheDiscardMode) {
       cardDiv.style.cursor = 'pointer';
       if (gameState.cacheDiscardSelectedIndices.has(idx)) {
@@ -947,13 +949,22 @@ function renderGameBoard() {
 
 function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   if (!gameState.deleteSelectionMode) return;
-  // Delete the selected card: remove from line and add to owner's discard pile
+
+  // Determine card owner
   let ownerId = null;
   if (gameState.players[1].lines[lineIndex].includes(card)) ownerId = 1;
   else if (gameState.players[2].lines[lineIndex].includes(card)) ownerId = 2;
   else return alert("Card ownership unknown");
 
-  gameState.players[ownerId].lines[lineIndex].splice(cardIndex, 1);
+  // Only allow deleting top card in stack
+  const ownerLine = gameState.players[ownerId].lines[lineIndex];
+  if (cardIndex !== ownerLine.length - 1) {
+    alert("You can only delete the top card of a stack.");
+    return;
+  }
+
+  // Proceed with delete
+  ownerLine.splice(cardIndex, 1);
   gameState.players[ownerId].discard.push(card);
   alert(`Deleted card: ${card.name}`);
 
@@ -966,6 +977,7 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   gameState.phase = 'cache';
   runPhase();
 }
+
 
 async function handleFire1Effect(card, playerId) {
   return new Promise((resolve) => {
