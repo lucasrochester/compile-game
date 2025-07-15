@@ -1034,3 +1034,40 @@ function updateTurnUI() {
 document.addEventListener('DOMContentLoaded', () => {
   setupFire1DiscardConfirmUI();
 });
+
+function updateDiscardConfirmButton() {
+  const btn = document.getElementById('fire1-discard-confirm-button');
+  if (!btn) return;
+
+  if (gameState.fire1DiscardMode) {
+    btn.disabled = (gameState.fire1DiscardSelectedIndex === null);
+    btn.style.display = 'inline-block';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+// Setup Fire 1 confirm discard button event
+document.getElementById('fire1-discard-confirm-button').addEventListener('click', () => {
+  if (!gameState.fire1DiscardMode) return;
+  if (gameState.fire1DiscardSelectedIndex === null) {
+    alert('Please select a card to discard.');
+    return;
+  }
+
+  const player = gameState.players[gameState.currentPlayer];
+  const discarded = player.hand.splice(gameState.fire1DiscardSelectedIndex, 1)[0];
+  player.discard.push(discarded);
+
+  alert(`Discarded: ${discarded.name}`);
+
+  gameState.fire1DiscardMode = false;
+  gameState.fire1DiscardSelectedIndex = null;
+
+  renderHand();
+  updateDiscardConfirmButton();
+
+  // Proceed to next step, e.g., delete card selection or cache phase
+  gameState.deleteSelectionMode = true;
+  alert("Select a card on the board to delete.");
+});
