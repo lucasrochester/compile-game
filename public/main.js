@@ -38,14 +38,14 @@ const gameState = {
   compileSelectionMode: false,
   compileEligibleLines: [],
   deleteSelectionMode: false,
-  boardDeleteSelectionMode: false,  // New flag for board card deletion selection mode
+  boardDeleteSelectionMode: false,
 };
 
 let selectedCardIndex = null;
 let selectedCardFaceUp = false;
 let cardPopupAckCount = 0;
 
-// ------------- Core functions and fetch -------------------
+// -------------------- UI & Game Logic --------------------
 
 function showCardPopup(card) {
   cardPopupAckCount = 0;
@@ -109,11 +109,19 @@ function initializeGame() {
     player.hand = [];
     player.discard = [];
 
+    // Draw initial 5 cards for both players
     const cardsToDraw = 5;
     for (let i = 0; i < cardsToDraw && player.deck.length > 0; i++) {
       drawCard(pid);
     }
   });
+
+  // Force add Fire 1 face up to Player 1's hand for testing
+  const fire1Card = allCardsData.protocols['Fire']?.cards.find(c => c.name === 'Fire 1');
+  if (fire1Card) {
+    const testCard = {...fire1Card, protocolColor: protocolColors['Fire'], faceUp: true};
+    gameState.players[1].hand.push(testCard);
+  }
 
   renderGameBoard();
   renderHand();
@@ -205,7 +213,7 @@ function startTurn() {
   gameState.compileSelectionMode = false;
   gameState.compileEligibleLines = [];
   gameState.deleteSelectionMode = false;
-  gameState.boardDeleteSelectionMode = false; // Reset flag
+  gameState.boardDeleteSelectionMode = false;
   updateTurnUI();
 
   const mustCompileLine = gameState.mustCompileLineNextTurn[gameState.currentPlayer];
@@ -440,7 +448,7 @@ function triggerEffects(phase) {
   // Placeholder for Start/End effects processing
 }
 
-// ----------- New: Prompt helpers for Fire 1 effect ------------
+// ----------- Fire 1 middle effect and helpers --------------
 
 function promptPlayerDiscard(playerId) {
   return new Promise((resolve) => {
@@ -512,6 +520,8 @@ function promptSelectCardOnBoard(playerId, message) {
     }
 
     function boardClickListener(e) {
+      if (!gameState.boardDeleteSelectionMode) return;
+
       let cardDiv = e.target;
       while (cardDiv && !cardDiv.classList.contains('card')) {
         cardDiv = cardDiv.parentElement;
@@ -538,8 +548,6 @@ function promptSelectCardOnBoard(playerId, message) {
     }
   });
 }
-
-// ----------- Fire 1 middle effect --------------
 
 async function fire1MiddleEffect(playerId) {
   const player = gameState.players[playerId];
@@ -571,7 +579,7 @@ async function fire1MiddleEffect(playerId) {
   updateButtonsState();
 }
 
-// ----------- Play card on line, integrated Fire 1 middle effect --------------
+// ----------- Play card on line --------------
 
 async function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || gameState.boardDeleteSelectionMode) {
@@ -621,7 +629,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
-  // If the card played is Fire 1, run its middle effect!
   if (removedCard.name === "Fire 1" && removedCard.faceUp) {
     await fire1MiddleEffect(playerId);
   }
@@ -632,7 +639,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   }, 100);
 }
 
-// ------------- Render game board with data attributes and boardDeleteSelectionMode support ------------
+// ----------- Render game board -------------
 
 function renderGameBoard() {
   ['player1', 'player2'].forEach(pidStr => {
@@ -689,7 +696,7 @@ function renderGameBoard() {
           cardDiv.style.cursor = 'pointer';
           cardDiv.onclick = (e) => {
             e.stopPropagation();
-            // We'll let the global listener on #game-board handle the selection click
+            // The global listener handles selection in boardDeleteSelectionMode
           };
         } else {
           cardDiv.style.cursor = 'default';
@@ -717,7 +724,7 @@ function renderGameBoard() {
   });
 }
 
-// ------------- Setup Flip Toggle ----------------
+// ----------- Flip Toggle -------------
 
 function updateFlipToggleButton() {
   const btn = document.getElementById('flip-toggle-button');
@@ -738,7 +745,7 @@ function setupFlipToggle() {
   });
 }
 
-// ----------- Render hand and click handlers --------------
+// ----------- Render Hand -------------
 
 function renderHand() {
   const handDiv = document.getElementById('hand');
@@ -769,7 +776,7 @@ function renderHand() {
         cardDiv.classList.remove('discard-select');
       }
     } else if (gameState.boardDeleteSelectionMode) {
-      cardDiv.style.cursor = 'default'; // disable hand interaction during board delete selection mode
+      cardDiv.style.cursor = 'default';
       cardDiv.classList.remove('discard-select');
     } else {
       cardDiv.style.cursor = 'pointer';
@@ -802,7 +809,6 @@ function renderHand() {
         updateDiscardConfirmButton();
         renderHand();
       } else if (gameState.boardDeleteSelectionMode) {
-        // No hand interaction allowed during board delete selection mode
         alert("Please select a card on the board to delete.");
       } else {
         if (gameState.actionTaken) {
@@ -830,7 +836,7 @@ function renderHand() {
   updateRefreshButton();
 }
 
-// ----------- Refresh button ----------------
+// ----------- Refresh Button -------------
 
 function updateRefreshButton() {
   const btn = document.getElementById('refresh-button');
@@ -842,7 +848,7 @@ function updateRefreshButton() {
   }
 }
 
-// ----------- Discard Confirm Button --------------
+// ----------- Discard Confirm Button -------------
 
 function setupDiscardConfirmButton() {
   const btn = document.getElementById('discard-confirm-button');
@@ -893,7 +899,7 @@ function updateDiscardConfirmButton() {
   btn.style.display = 'inline-block';
 }
 
-// ----------- lineTotalValue ----------------
+// ----------- lineTotalValue -------------
 
 function lineTotalValue(playerId, lineIndex) {
   const cards = gameState.players[playerId].lines[lineIndex];
