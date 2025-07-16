@@ -109,14 +109,23 @@ function initializeGame() {
     player.hand = [];
     player.discard = [];
 
-    // Removed Fire 1 special handling (no card forced in hand)
+    // No Fire 1 removal or forced addition here!
 
-    // Draw initial cards (4 for Player 1, 5 for Player 2)
-    const cardsToDraw = (pid === 1) ? 4 : 5;
+    // Draw initial cards (5 for both players)
+    const cardsToDraw = 5;
     for (let i = 0; i < cardsToDraw && player.deck.length > 0; i++) {
       drawCard(pid);
     }
   });
+
+  renderGameBoard();
+  renderHand();
+  setupFlipToggle();
+  updateButtonsState();
+  setupLineClickDelegation();
+  setupDiscardConfirmButton();
+}
+
 
   renderGameBoard();
   renderHand();
