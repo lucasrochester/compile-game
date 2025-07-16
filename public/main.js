@@ -38,7 +38,6 @@ const gameState = {
   compileSelectionMode: false,
   compileEligibleLines: [],
   deleteSelectionMode: false,
-  // Removed all fire1DiscardMode and fire1 effect states
 };
 
 let selectedCardIndex = null;
@@ -109,9 +108,9 @@ function initializeGame() {
     player.hand = [];
     player.discard = [];
 
-    // No Fire 1 removal or forced addition here!
+    // No forced Fire 1 card in hand or removal from deck here
 
-    // Draw initial cards (5 for both players)
+    // Draw initial 5 cards for both players
     const cardsToDraw = 5;
     for (let i = 0; i < cardsToDraw && player.deck.length > 0; i++) {
       drawCard(pid);
@@ -124,16 +123,6 @@ function initializeGame() {
   updateButtonsState();
   setupLineClickDelegation();
   setupDiscardConfirmButton();
-}
-
-
-  renderGameBoard();
-  renderHand();
-  setupFlipToggle();
-  updateButtonsState();
-  setupLineClickDelegation();
-  setupDiscardConfirmButton();
-  // Removed setupFire1DiscardConfirmButton call
 }
 
 function setupLineClickDelegation() {
@@ -399,7 +388,7 @@ function endPhase() {
 
   setTimeout(() => {
     gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
-    gameState.actionTaken = false; // reset for next player
+    gameState.actionTaken = false;
     startTurn();
   }, 500);
 }
@@ -840,3 +829,4 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   gameState.phase = 'cache';
   runPhase();
 }
+
