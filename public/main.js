@@ -89,6 +89,85 @@ function shuffle(array) {
   }
 }
 
+// -------- Fire 1 Effect Logic Added Here --------
+
+async function tryTriggerFire1Effect(card, ownerId) {
+  if (!card || card.name !== 'Fire 1') return;
+
+  const player = gameState.players[ownerId];
+  if (player.hand.length === 0) {
+    // No cards to discard, skip effect
+    return;
+  }
+
+  const discardIndex = prompt(`Fire 1 effect: Discard 1 card from your hand.\nYour hand:\n` +
+    player.hand.map((c, i) => `${i}: ${c.name} (${c.value})`).join('\n') +
+    `\nEnter index to discard or cancel:`);
+
+  if (discardIndex === null || discardIndex === '') {
+    // Cancelled
+    return;
+  }
+
+  const idx = parseInt(discardIndex);
+  if (isNaN(idx) || idx < 0 || idx >= player.hand.length) {
+    alert("Invalid discard index, skipping Fire 1 discard.");
+    return;
+  }
+
+  const discardedCard = player.hand.splice(idx, 1)[0];
+  player.discard.push(discardedCard);
+  alert(`Player ${ownerId} discarded "${discardedCard.name}" due to Fire 1.`);
+
+  renderHand();
+
+  // Gather all top cards for deletion choice
+  const deletableCards = [];
+  [1, 2].forEach(pid => {
+    gameState.players[pid].lines.forEach((line, lineIdx) => {
+      if (line.length > 0) {
+        const topCard = line[line.length - 1];
+        deletableCards.push({
+          playerId: pid,
+          lineIndex: lineIdx,
+          card: topCard,
+          displayName: `${topCard.name} (Player ${pid}, Line ${lineIdx})`
+        });
+      }
+    });
+  });
+
+  if (deletableCards.length === 0) {
+    alert("No cards on the board to delete.");
+    return;
+  }
+
+  const deleteChoice = prompt(`Fire 1 effect: Choose a top card to delete:\n` +
+    deletableCards.map((c, i) => `${i}: ${c.displayName}`).join('\n') +
+    `\nEnter index to delete or cancel:`);
+
+  if (deleteChoice === null || deleteChoice === '') {
+    alert("You chose not to delete any card.");
+    return;
+  }
+
+  const delIdx = parseInt(deleteChoice);
+  if (isNaN(delIdx) || delIdx < 0 || delIdx >= deletableCards.length) {
+    alert("Invalid selection, skipping delete.");
+    return;
+  }
+
+  const chosen = deletableCards[delIdx];
+  gameState.players[chosen.playerId].lines[chosen.lineIndex].pop();
+  gameState.players[chosen.playerId].discard.push(chosen.card);
+
+  alert(`Player ${ownerId} deleted "${chosen.card.name}" from Player ${chosen.playerId} line ${chosen.lineIndex}.`);
+
+  renderGameBoard();
+}
+
+// -------- End Fire 1 Effect Logic --------
+
 function initializeGame() {
   [1, 2].forEach(pid => {
     const player = gameState.players[pid];
@@ -97,7 +176,7 @@ function initializeGame() {
     player.protocols.forEach(protocol => {
       const protocolCards = allCardsData.protocols[protocol]?.cards || [];
       protocolCards.forEach(cardData => {
-        const card = {...cardData, protocolColor: protocolColors[protocol], faceUp: false};
+        const card = { ...cardData, protocolColor: protocolColors[protocol], faceUp: false };
         player.deck.push(card);
       });
     });
@@ -536,6 +615,8 @@ function renderHand() {
   updateRefreshButton();
 }
 
+// --- IMPORTANT: Modified playCardOnLine to trigger Fire 1 effect ---
+
 async function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode || gameState.deleteSelectionMode) {
     alert("Cannot play cards during special effect selection.");
@@ -575,6 +656,11 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   removedCard.faceUp = selectedCardFaceUp;
 
   gameState.players[playerId].lines[lineIndex].push(removedCard);
+
+  // Fire 1 effect trigger if card is Fire 1 played face up
+  if (removedCard.faceUp && removedCard.name === 'Fire 1') {
+    await tryTriggerFire1Effect(removedCard, playerId);
+  }
 
   selectedCardIndex = null;
   selectedCardFaceUp = false;
@@ -631,7 +717,7 @@ function setupDiscardConfirmButton() {
       return;
     }
 
-    const indices = Array.from(gameState.cacheDiscardSelectedIndices).sort((a,b) => b - a);
+    const indices = Array.from(gameState.cacheDiscardSelectedIndices).sort((a, b) => b - a);
     for (const idx of indices) {
       const [removed] = player.hand.splice(idx, 1);
       player.discard.push(removed);
@@ -743,7 +829,7 @@ function renderGameBoard() {
           cardDiv.style.cursor = 'pointer';
           cardDiv.classList.add('delete-selectable');
 
-          if (i === cards.length -1) {
+          if (i === cards.length - 1) {
             cardDiv.onclick = () => {
               handleDeleteSelection(playerId, idx, i, card);
             };
