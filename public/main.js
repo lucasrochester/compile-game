@@ -137,10 +137,6 @@ function setupLineClickDelegation() {
         alert("Cannot play cards during special effect selection.");
         return;
       }
-      if (gameState.actionTaken) {
-        alert("You already took an action this turn!");
-        return;
-      }
       if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
         alert("You must compile your protocol this turn; no other actions allowed.");
         return;
@@ -534,10 +530,6 @@ function renderHand() {
         updateDiscardConfirmButton();
         renderHand();
       } else {
-        if (gameState.actionTaken) {
-          alert("You already took an action this turn!");
-          return;
-        }
         if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
           alert("You must compile your protocol this turn; no other actions allowed.");
           return;
@@ -566,10 +558,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   }
   if (playerId !== gameState.currentPlayer) {
     alert("It's not this player's turn!");
-    return;
-  }
-  if (gameState.actionTaken) {
-    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[playerId] !== null) {
@@ -626,10 +614,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
 document.getElementById('refresh-button').addEventListener('click', () => {
   if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
     alert("Cannot refresh during special effect selection.");
-    return;
-  }
-  if (gameState.actionTaken) {
-    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
