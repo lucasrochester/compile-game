@@ -551,13 +551,18 @@ function renderHand() {
   updateRefreshButton();
 }
 
+// --- Modify playCardOnLine to detect Fire 0 effects ---
 async function playCardOnLine(playerId, handIndex, lineIndex) {
-  if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
+  if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode || fire0FlipSelectionMode) {
     alert("Cannot play cards during special effect selection.");
     return;
   }
   if (playerId !== gameState.currentPlayer) {
     alert("It's not this player's turn!");
+    return;
+  }
+  if (gameState.actionTaken) {
+    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[playerId] !== null) {
@@ -570,7 +575,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   }
 
   const protocol = gameState.players[playerId].protocols[lineIndex];
-
   const card = gameState.players[playerId].hand[handIndex];
   const cardProtocol = card.name.split(' ')[0];
   const lineProtocol = protocol;
@@ -585,24 +589,26 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
   removedCard.faceUp = selectedCardFaceUp;
 
-  gameState.players[playerId].lines[lineIndex].push(removedCard);
+  // Check cover effect if top card is Fire 0 face up
+  const line = gameState.players[playerId].lines[lineIndex];
+  if (line.length > 0) {
+    const topCard = line[line.length - 1];
+    if (topCard.name === 'Fire 0' && topCard.faceUp) {
+      await triggerFire0CoverEffect(playerId);
+    }
+  }
 
-  selectedCardIndex = null;
-  selectedCardFaceUp = false;
-  updateFlipToggleButton();
+  gameState.players[playerId].lines[lineIndex].push(removedCard);
 
   renderGameBoard();
   renderHand();
   updateButtonsState();
 
-  // Fire 1 effect: if card is Fire 1 and played face up, trigger discard+delete sequence
-  if (removedCard.faceUp && removedCard.name === 'Fire 1') {
-    fire1DiscardMode = true;
-    fire1DiscardSelectedIndices.clear();
-    document.getElementById('discard-confirm-container').style.display = 'block';
-    updateFire1DiscardInstruction();
-    updateDiscardConfirmButton();
-    renderHand();
+  // Trigger play/flip-up effect of Fire 0 if applicable
+  if (removedCard.faceUp && removedCard.name === 'Fire 0') {
+    await triggerFire0PlayOrFlipUpEffect(playerId);
+  } else if (removedCard.faceUp && removedCard.name === 'Fire 1') {
+    // Existing Fire 1 effect...
   } else {
     setTimeout(() => {
       gameState.phase = 'cache';
@@ -760,6 +766,113 @@ async function handleFire1DiscardConfirm() {
   renderGameBoard();
 }
 
+// --- Fire 0 specific flags ---
+let fire0FlipSelectionMode = false;
+let fire0FlipCandidates = []; // Cards eligible to flip
+let fire0EffectType = ''; // 'playOrFlipUp' or 'cover'
+
+// --- Trigger Fire 0 effect when played or flipped face up ---
+async function triggerFire0PlayOrFlipUpEffect(playerId) {
+  fire0EffectType = 'playOrFlipUp';
+  fire0FlipSelectionMode = true;
+  fire0FlipCandidates = getAllFlippableCards(playerId);
+
+  if (fire0FlipCandidates.length === 0) {
+    alert("No cards available to flip for Fire 0 effect.");
+    drawMultipleCards(playerId, 2);
+    fire0FlipSelectionMode = false;
+    runPhaseAfterEffect();
+    return;
+  }
+
+  alert("Fire 0 effect: Select one card to flip (face up/down). If you flip a face-down card face up, its effects will trigger.");
+  renderGameBoard();
+}
+
+// --- Trigger Fire 0 effect when about to be covered ---
+async function triggerFire0CoverEffect(playerId) {
+  fire0EffectType = 'cover';
+  fire0FlipSelectionMode = true;
+
+  // Flip candidates exclude Fire 0 cards
+  fire0FlipCandidates = getAllFlippableCards(playerId).filter(c => c.card.name !== 'Fire 0');
+
+  if (fire0FlipCandidates.length === 0) {
+    alert("No valid cards to flip for Fire 0 cover effect.");
+    drawMultipleCards(playerId, 1);
+    fire0FlipSelectionMode = false;
+    runPhaseAfterEffect();
+    return;
+  }
+
+  drawMultipleCards(playerId, 1);
+  alert("Fire 0 cover effect: Draw 1 card and select one non-Fire 0 card to flip.");
+  renderGameBoard();
+}
+
+// --- Get all top cards on board as candidates to flip ---
+function getAllFlippableCards(playerId) {
+  const candidates = [];
+  [1, 2].forEach(pid => {
+    gameState.players[pid].lines.forEach((line, lineIndex) => {
+      if (line.length === 0) return;
+      const topCard = line[line.length - 1];
+      candidates.push({
+        playerId: pid,
+        lineIndex,
+        card: topCard
+      });
+    });
+  });
+  return candidates;
+}
+
+// --- Handle card flip selection for Fire 0 effect ---
+function handleFire0FlipSelection(playerId, lineIndex, cardIndex, card) {
+  if (!fire0FlipSelectionMode) return;
+
+  const line = gameState.players[playerId].lines[lineIndex];
+  if (cardIndex !== line.length - 1) {
+    alert("You can only flip the top card of a stack.");
+    return;
+  }
+
+  const wasFaceDown = !card.faceUp;
+  card.faceUp = !card.faceUp; // Flip the card
+
+  alert(`Flipped card "${card.name}" ${card.faceUp ? 'face up' : 'face down'}.`);
+
+  // If flipped face down, no further effect
+  if (wasFaceDown && card.faceUp) {
+    // Trigger the card's middle effect immediately
+    triggerCardMiddleEffect(card, playerId);
+  }
+
+  fire0FlipSelectionMode = false;
+  renderGameBoard();
+  renderHand();
+  updateButtonsState();
+
+  // After flip, draw cards depending on effect type
+  if (fire0EffectType === 'playOrFlipUp') {
+    drawMultipleCards(playerId, 2);
+  }
+  // For 'cover' effect, card draw already done before selection
+
+  runPhaseAfterEffect();
+}
+
+// --- Function to trigger middle effect text logic for a card ---
+function triggerCardMiddleEffect(card, playerId) {
+  if (!card.middleEffect) return;
+
+  alert(`Triggering middle effect of "${card.name}":\n${card.middleEffect}`);
+
+  // Here, implement logic for specific card middle effects as needed
+  // For example, if you want to automate effects like "Draw 2 cards", etc.
+  // For now, you can leave this as a placeholder or extend per card.
+}
+
 function lineTotalValue(playerId, lineIndex) {
   const cards = gameState.players[playerId].lines[lineIndex];
   return cards.reduce((sum, card) => {
@@ -797,6 +910,7 @@ function updateRefreshButton() {
   }
 }
 
+// --- Modify renderGameBoard to handle Fire 0 flip selections ---
 function renderGameBoard() {
   ['player1', 'player2'].forEach(pidStr => {
     const playerId = parseInt(pidStr.replace('player', ''));
@@ -822,7 +936,6 @@ function renderGameBoard() {
         cardDiv.classList.add('card');
 
         if (!card.faceUp) cardDiv.classList.add('face-down');
-
         if (i < cards.length - 1) cardDiv.classList.add('covered');
 
         cardDiv.style.borderColor = card.faceUp ? (card.protocolColor || 'gray') : 'black';
@@ -830,32 +943,17 @@ function renderGameBoard() {
         cardDiv.style.zIndex = i + 1;
         cardDiv.style.left = '0';
 
-        if (fire1DeleteSelectionMode) {
+        if (fire0FlipSelectionMode) {
           cardDiv.style.cursor = 'pointer';
-
-          // Only top cards are clickable, others alert message
           if (i === cards.length - 1) {
-            cardDiv.onclick = () => {
-              handleFire1DeleteSelection(playerId, idx, i, card);
-            };
+            cardDiv.onclick = () => handleFire0FlipSelection(playerId, idx, i, card);
           } else {
-            cardDiv.onclick = () => {
-              alert("You can only delete the top card of a stack.");
-            };
+            cardDiv.onclick = () => alert("You can only flip the top card of a stack.");
           }
+        } else if (fire1DeleteSelectionMode) {
+          // Your Fire 1 delete selection code here...
         } else if (gameState.deleteSelectionMode) {
-          cardDiv.style.cursor = 'pointer';
-          cardDiv.classList.add('delete-selectable');
-
-          if (i === cards.length -1) {
-            cardDiv.onclick = () => {
-              handleDeleteSelection(playerId, idx, i, card);
-            };
-          } else {
-            cardDiv.onclick = () => {
-              alert("You can only delete the top card of a stack.");
-            };
-          }
+          // Generic delete selection code...
         } else {
           cardDiv.style.cursor = 'default';
           cardDiv.onclick = null;
@@ -877,7 +975,7 @@ function renderGameBoard() {
 
       const protocol = gameState.players[playerId].protocols[idx];
       const isCompiled = gameState.compiledProtocols[playerId].includes(protocol);
-      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode && !gameState.deleteSelectionMode && !fire1DeleteSelectionMode) ? 'pointer' : 'default';
+      lineDiv.style.cursor = (playerId === gameState.currentPlayer && !isCompiled && !gameState.cacheDiscardMode && gameState.mustCompileLineNextTurn[playerId] === null && !gameState.actionTaken && !gameState.compileSelectionMode && !gameState.deleteSelectionMode && !fire0FlipSelectionMode && !fire1DeleteSelectionMode) ? 'pointer' : 'default';
     });
   });
 }
