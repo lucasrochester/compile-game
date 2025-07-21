@@ -794,8 +794,11 @@ async function triggerFire0CoverEffect(playerId) {
   fire0EffectType = 'cover';
   fire0FlipSelectionMode = true;
 
-  // Flip candidates exclude Fire 0 cards
-  fire0FlipCandidates = getAllFlippableCards(playerId).filter(c => c.card.name !== 'Fire 0');
+  // For play or flip-up effect:
+  fire0FlipCandidates = getAllFlippableCards(playerId, true);
+
+  // For cover effect (already excludes Fire 0):
+  fire0FlipCandidates = getAllFlippableCards(playerId, true);
 
   if (fire0FlipCandidates.length === 0) {
     alert("No valid cards to flip for Fire 0 cover effect.");
@@ -811,12 +814,13 @@ async function triggerFire0CoverEffect(playerId) {
 }
 
 // --- Get all top cards on board as candidates to flip ---
-function getAllFlippableCards(playerId) {
+function getAllFlippableCards(playerId, excludeFire0 = false) {
   const candidates = [];
   [1, 2].forEach(pid => {
     gameState.players[pid].lines.forEach((line, lineIndex) => {
       if (line.length === 0) return;
       const topCard = line[line.length - 1];
+      if (excludeFire0 && topCard.name === 'Fire 0') return;
       candidates.push({
         playerId: pid,
         lineIndex,
@@ -826,6 +830,7 @@ function getAllFlippableCards(playerId) {
   });
   return candidates;
 }
+
 
 // --- Handle card flip selection for Fire 0 effect ---
 function handleFire0FlipSelection(playerId, lineIndex, cardIndex, card) {
