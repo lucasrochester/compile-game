@@ -51,57 +51,6 @@ let selectedCardFaceUp = false;
 let cardPopupAckCount = 0;
 
 // -------------------- UI & Game Logic --------------------
-
-const CardEffectLibrary = {
-    "Fire 0": {
-        middle: async (playerId) => {
-            await handleFire0FlipEffect(playerId);
-            for (let i = 0; i < 2; i++) drawCard(playerId);
-        },
-        covered: async (playerId) => {
-            drawCard(playerId);
-            await handleFire0FlipEffect(playerId);
-        }
-    },
-    // Your existing Fire 1 implementation stays here.
-};
-
-async function handleFire0FlipEffect(playerId) {
-    const candidateCards = [];
-    [1, 2].forEach(pid => {
-        gameState.players[pid].lines.forEach((line, lineIndex) => {
-            if (line.length > 0) {
-                const topCard = line[line.length - 1];
-                if (topCard.name !== "Fire 0") {
-                    candidateCards.push({ playerId: pid, lineIndex, card: topCard });
-                }
-            }
-        });
-    });
-
-    if (candidateCards.length === 0) { alert("No valid cards to flip for Fire 0."); return; }
-
-    alert("Select a card to flip for Fire 0 effect.");
-    gameState.deleteSelectionMode = true;
-    renderGameBoard();
-
-    return new Promise((resolve) => {
-        candidateCards.forEach(({ playerId, lineIndex, card }) => {
-            const lineDiv = document.querySelector(`#player${playerId} .line[data-line="${lineIndex}"]`);
-            const cardDiv = lineDiv.querySelector(".card:last-child");
-            cardDiv.style.outline = "2px solid red";
-            cardDiv.onclick = () => {
-                cardDiv.onclick = null;
-                gameState.deleteSelectionMode = false;
-                card.faceUp = !card.faceUp;
-                if (card.faceUp) triggerCardEffect(card, playerId, "middle");
-                renderGameBoard();
-                resolve();
-            };
-        });
-    });
-}
-
 async function triggerCardEffect(card, playerId, trigger) {
     const effectFunc = CardEffectLibrary[card.name]?.[trigger.toLowerCase()];
     if (effectFunc) await effectFunc(playerId);
