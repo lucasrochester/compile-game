@@ -578,10 +578,14 @@ function renderHand() {
 }
 
 async function playCardOnLine(playerId, handIndex, lineIndex) {
+  
   if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
     alert("Cannot play cards during special effect selection.");
     return;
   }
+
+  gameState.actionTaken = true;
+  
   if (playerId !== gameState.currentPlayer) {
     alert("It's not this player's turn!");
     return;
@@ -605,9 +609,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
     alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
     return;
   }
-
-  gameState.actionTaken = true;
-
+  
   const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
   removedCard.faceUp = selectedCardFaceUp;
 
@@ -623,7 +625,6 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
 
   if (removedCard.faceUp && removedCard.name === 'Fire 0') {
     await triggerCardEffect(removedCard, playerId, 'middle');
-    return;
   }
 
   
