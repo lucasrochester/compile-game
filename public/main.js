@@ -558,6 +558,180 @@ function renderHand() {
 
   updateRefreshButton();
 }
+// --- Utilities ---
+
+// Get all top cards on board eligible to flip (optionally excluding Fire 0)
+function getAllFlippableCards(excludeFire0 = true) {
+  const flippable = [];
+
+  [1, 2].forEach(pid => {
+    gameState.players[pid].lines.forEach((line, lineIndex) => {
+      if (line.length === 0) return;
+      const topCardIndex = line.length - 1;
+      const card = line[topCardIndex];
+      if (excludeFire0 && card.name === 'Fire 0') return;
+      flippable.push({ playerId: pid, lineIndex, cardIndex: topCardIndex, card });
+    });
+  });
+
+  return flippable;
+}
+
+// Flip a card face up/down toggling its state
+// Triggers middle effect only when flipping face down → face up
+async function flipCard(playerId, lineIndex, cardIndex) {
+  const card = gameState.players[playerId].lines[lineIndex][cardIndex];
+  if (!card) return false;
+
+  const wasFaceUp = card.faceUp;
+  card.faceUp = !wasFaceUp;
+
+  renderGameBoard();
+
+  if (!wasFaceUp && card.faceUp) {
+    // Trigger middle effect only when flipping face up
+    await resolveMiddleEffect(playerId, lineIndex, cardIndex);
+  }
+
+  return true;
+}
+
+// Show card middle effect text modal, wait for 2 clicks to acknowledge
+function showEffectModal(effectText) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('card-popup-modal');
+    const textEl = document.getElementById('popup-card-text');
+    const ackCountEl = document.getElementById('popup-ack-count');
+
+    let ackCount = 0;
+    textEl.textContent = effectText;
+    ackCountEl.textContent = ackCount;
+    modal.style.display = 'block';
+
+    function onClick() {
+      ackCount++;
+      ackCountEl.textContent = ackCount;
+
+      if (ackCount >= 2) {
+        modal.style.display = 'none';
+        modal.removeEventListener('click', onClick);
+        resolve();
+      }
+    }
+
+    modal.addEventListener('click', onClick);
+  });
+}
+
+// Resolve the middle effect of a card (currently just shows modal)
+// TODO: expand this to parse and execute middle effect commands
+async function resolveMiddleEffect(playerId, lineIndex, cardIndex) {
+  const card = gameState.players[playerId].lines[lineIndex][cardIndex];
+  if (!card || !card.middleEffect) return;
+
+  await showEffectModal(card.middleEffect);
+
+  // Parsing and effect execution goes here in future
+}
+
+// Prompt player to select a card from list (using prompt for now)
+// Returns selected card info or null if cancelled
+async function promptPlayerToSelectCard(playerId, flippableCards, message) {
+  if (flippableCards.length === 0) return null;
+
+  let promptText = message + '\n';
+  flippableCards.forEach((c, i) => {
+    promptText += `${i}: Player ${c.playerId} - ${c.card.name} (line ${c.lineIndex})\n`;
+  });
+
+  while (true) {
+    const input = prompt(promptText + 'Enter the number of the card to flip:');
+    if (input === null) return null;
+    const choice = parseInt(input);
+    if (!isNaN(choice) && choice >= 0 && choice < flippableCards.length) {
+      return flippableCards[choice];
+    }
+    alert('Invalid selection. Try again.');
+  }
+}
+
+// Draw N cards for player from deck, reshuffle discard if needed
+async function drawCards(playerId, count) {
+  const player = gameState.players[playerId];
+  for (let i = 0; i < count; i++) {
+    if (player.deck.length === 0 && player.discard.length > 0) {
+      player.deck = player.discard.splice(0);
+      shuffle(player.deck);
+    }
+    if (player.deck.length === 0) break; // no cards left
+    const card = player.deck.pop();
+    card.faceUp = true; // draw face up by default
+    player.hand.push(card);
+  }
+  renderHand();
+}
+
+// --- Fire 0 Effect Handlers ---
+
+// Called when Fire 0 is played face up, flipped face up, or uncovered face up
+async function handleFire0Trigger(playerId, lineIndex, cardIndex) {
+  alert("Fire 0 effect triggered! You must flip another card (not Fire 0).");
+
+  const flippableCards = getAllFlippableCards(true);
+
+  if (flippableCards.length === 0) {
+    alert("No cards available to flip, skipping.");
+    await drawCards(playerId, 2);
+    return;
+  }
+
+  const chosen = await promptPlayerToSelectCard(playerId, flippableCards, "Select a card to flip (not Fire 0):");
+
+  if (chosen) {
+    const { playerId: pid, lineIndex: lidx, cardIndex: cidx } = chosen;
+    await flipCard(pid, lidx, cidx);
+  }
+
+  await drawCards(playerId, 2);
+}
+
+// Called when Fire 0 face up card gets covered by another card
+async function handleFire0Covered(playerId) {
+  alert("Your Fire 0 was covered! You draw 1 card and may flip 1 other card (not Fire 0).");
+  await drawCards(playerId, 1);
+
+  const flippableCards = getAllFlippableCards(true);
+  if (flippableCards.length === 0) {
+    alert("No cards to flip, skipping.");
+    return;
+  }
+
+  const chosen = await promptPlayerToSelectCard(playerId, flippableCards, "Select a card to flip (not Fire 0):");
+
+  if (chosen) {
+    const { playerId: pid, lineIndex: lidx, cardIndex: cidx } = chosen;
+    await flipCard(pid, lidx, cidx);
+  }
+}
+
+// --- Integration Examples ---
+
+// In your playCardOnLine(), after placing the card on board:
+// (Assuming removedCard is the card just placed on the line)
+if (removedCard.faceUp && removedCard.name === 'Fire 0') {
+  await handleFire0Trigger(playerId, lineIndex, gameState.players[playerId].lines[lineIndex].length - 1);
+}
+
+// In your card flipping code, whenever a card is flipped from face down to face up:
+if (!card.faceUp && flippingToFaceUp && card.name === 'Fire 0') {
+  await handleFire0Trigger(playerId, lineIndex, cardIndex);
+}
+
+// When a new card covers the top card on a line, check for Fire 0 cover effect:
+const coveredCard = gameState.players[playerId].lines[lineIndex][line.length - 1];
+if (coveredCard.name === 'Fire 0' && coveredCard.faceUp) {
+  await handleFire0Covered(playerId);
+}
 
 async function playCardOnLine(playerId, handIndex, lineIndex) {
   if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
