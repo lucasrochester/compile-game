@@ -40,6 +40,20 @@ const gameState = {
   deleteSelectionMode: false,
 };
 
+const CardEffectLibrary = {
+    "Fire 0": {
+        middle: async (playerId) => {
+            await handleFire0FlipEffect(playerId);
+            for (let i = 0; i < 2; i++) drawCard(playerId);
+        },
+        covered: async (playerId) => {
+            drawCard(playerId);
+            await handleFire0FlipEffect(playerId);
+        }
+    }
+};
+
+
 // Fire 1 discard+delete special interaction state
 let fire1DiscardMode = false;
 let fire1DiscardSelectedIndices = new Set();
@@ -607,6 +621,12 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   renderHand();
   updateButtonsState();
 
+  if (removedCard.faceUp && removedCard.name === 'Fire 0') {
+    await triggerCardEffect(removedCard, playerId, 'middle');
+    return;
+  }
+
+  
   // Fire 1 effect: if card is Fire 1 and played face up, trigger discard+delete sequence
   if (removedCard.faceUp && removedCard.name === 'Fire 1') {
     fire1DiscardMode = true;
@@ -718,6 +738,43 @@ function updateFire1DiscardInstruction() {
 
   instructionDiv.textContent = `Fire 1: Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount}`;
 }
+
+async function handleFire0FlipEffect(playerId) {
+    const candidateCards = [];
+    [1, 2].forEach(pid => {
+        gameState.players[pid].lines.forEach((line, lineIndex) => {
+            if (line.length > 0) {
+                const topCard = line[line.length - 1];
+                if (topCard.name !== "Fire 0") {
+                    candidateCards.push({ playerId: pid, lineIndex, card: topCard });
+                }
+            }
+        });
+    });
+
+    if (candidateCards.length === 0) { alert("No valid cards to flip for Fire 0."); return; }
+
+    alert("Select a card to flip for Fire 0 effect.");
+    gameState.deleteSelectionMode = true;
+    renderGameBoard();
+
+    return new Promise((resolve) => {
+        candidateCards.forEach(({ playerId, lineIndex, card }) => {
+            const lineDiv = document.querySelector(`#player${playerId} .line[data-line="${lineIndex}"]`);
+            const cardDiv = lineDiv.querySelector(".card:last-child");
+            cardDiv.style.outline = "2px solid red";
+            cardDiv.onclick = () => {
+                cardDiv.onclick = null;
+                gameState.deleteSelectionMode = false;
+                card.faceUp = !card.faceUp;
+                if (card.faceUp) triggerCardEffect(card, playerId, "middle");
+                renderGameBoard();
+                resolve();
+            };
+        });
+    });
+}
+
 
 // Handle Fire 1 discard confirm
 async function handleFire1DiscardConfirm() {
