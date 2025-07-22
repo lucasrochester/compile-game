@@ -579,71 +579,72 @@ function renderHand() {
 }
 
 async function playCardOnLine(playerId, handIndex, lineIndex) {
-  
-  if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
-    alert("Cannot play cards during special effect selection.");
-    return;
-  }
+    if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
+        alert("Cannot play cards during special effect selection.");
+        return;
+    }
+    if (playerId !== gameState.currentPlayer) {
+        alert("It's not this player's turn!");
+        return;
+    }
+    if (gameState.mustCompileLineNextTurn[playerId] !== null) {
+        alert("You must compile your protocol this turn; no other actions allowed.");
+        return;
+    }
+    if (gameState.compileSelectionMode) {
+        alert("Please select a protocol to compile first.");
+        return;
+    }
 
-  gameState.actionTaken = true;
-  
-  if (playerId !== gameState.currentPlayer) {
-    alert("It's not this player's turn!");
-    return;
-  }
-  if (gameState.mustCompileLineNextTurn[playerId] !== null) {
-    alert("You must compile your protocol this turn; no other actions allowed.");
-    return;
-  }
-  if (gameState.compileSelectionMode) {
-    alert("Please select a protocol to compile first.");
-    return;
-  }
+    gameState.actionTaken = true;
 
-  const protocol = gameState.players[playerId].protocols[lineIndex];
+    const protocol = gameState.players[playerId].protocols[lineIndex];
+    const card = gameState.players[playerId].hand[handIndex];
+    const cardProtocol = card.name.split(' ')[0];
+    const lineProtocol = protocol;
 
-  const card = gameState.players[playerId].hand[handIndex];
-  const cardProtocol = card.name.split(' ')[0];
-  const lineProtocol = protocol;
+    if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
+        alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+        return;
+    }
 
-  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
-    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
-    return;
-  }
-  
-  const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-  removedCard.faceUp = selectedCardFaceUp;
+    const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+    removedCard.faceUp = selectedCardFaceUp;
 
-  coverCard(gameState.players[playerId].lines[lineIndex], removedCard, playerId);
+    // ✅ Only call coverCard. This handles placing AND Fire 0's effect.
+    coverCard(gameState.players[playerId].lines[lineIndex], removedCard, playerId);
 
-  selectedCardIndex = null;
-  selectedCardFaceUp = false;
-  updateFlipToggleButton();
+    selectedCardIndex = null;
+    selectedCardFaceUp = false;
+    updateFlipToggleButton();
 
-  renderGameBoard();
-  renderHand();
-  updateButtonsState();
-
-  if (removedCard.faceUp && removedCard.name === 'Fire 0') {
-    await triggerCardEffect(removedCard, playerId, 'middle');
-  }
-
-  
-  // Fire 1 effect: if card is Fire 1 and played face up, trigger discard+delete sequence
-  if (removedCard.faceUp && removedCard.name === 'Fire 1') {
-    fire1DiscardMode = true;
-    fire1DiscardSelectedIndices.clear();
-    document.getElementById('discard-confirm-container').style.display = 'block';
-    updateFire1DiscardInstruction();
-    updateDiscardConfirmButton();
+    renderGameBoard();
     renderHand();
-  } else {
+    updateButtonsState();
+
+    // Fire 1 has its own special flow
+    if (removedCard.faceUp && removedCard.name === 'Fire 1') {
+        fire1DiscardMode = true;
+        fire1DiscardSelectedIndices.clear();
+        document.getElementById('discard-confirm-container').style.display = 'block';
+        updateFire1DiscardInstruction();
+        updateDiscardConfirmButton();
+        renderHand();
+        return;
+    }
+
+    // Fire 0 immediate effect after play (middle)
+    if (removedCard.faceUp && removedCard.name === 'Fire 0') {
+        await triggerCardEffect(removedCard, playerId, 'middle');
+    }
+
+    // Standard flow: move to cache phase after any card is played
     setTimeout(() => {
-      gameState.phase = 'cache';
-      runPhase();
+        gameState.phase = 'cache';
+        runPhase();
     }, 100);
-  }
 }
+
 
 document.getElementById('refresh-button').addEventListener('click', () => {
   if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
