@@ -614,7 +614,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
   removedCard.faceUp = selectedCardFaceUp;
 
-  gameState.players[playerId].lines[lineIndex].push(removedCard);coverCard(gameState.players[playerId].lines[lineIndex], removedCard, playerId);
+  coverCard(gameState.players[playerId].lines[lineIndex], removedCard, playerId);
 
   selectedCardIndex = null;
   selectedCardFaceUp = false;
