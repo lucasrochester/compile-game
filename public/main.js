@@ -171,10 +171,11 @@ function setupLineClickDelegation() {
         alert("Please select a protocol to compile first.");
         return;
       }
-      if (playerId !== gameState.currentPlayer) {
+      if (playerId !== gameState.currentPlayer && selectedCardIndex !== null) {
         alert(`It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.`);
         return;
       }
+
       let lineDiv = e.target;
       while (lineDiv && !lineDiv.classList.contains('line')) {
         lineDiv = lineDiv.parentElement;
@@ -613,7 +614,7 @@ async function playCardOnLine(playerId, handIndex, lineIndex) {
   const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
   removedCard.faceUp = selectedCardFaceUp;
 
-  gameState.players[playerId].lines[lineIndex].push(removedCard);
+  gameState.players[playerId].lines[lineIndex].push(removedCard);coverCard(gameState.players[playerId].lines[lineIndex], removedCard, playerId);
 
   selectedCardIndex = null;
   selectedCardFaceUp = false;
