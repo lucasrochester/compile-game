@@ -40,20 +40,6 @@ const gameState = {
   deleteSelectionMode: false,
 };
 
-const CardEffectLibrary = {
-    "Fire 0": {
-        middle: async (playerId) => {
-            await handleFire0FlipEffect(playerId);
-            for (let i = 0; i < 2; i++) drawCard(playerId);
-        },
-        covered: async (playerId) => {
-            drawCard(playerId);
-            await handleFire0FlipEffect(playerId);
-        }
-    }
-};
-
-
 // Fire 1 discard+delete special interaction state
 let fire1DiscardMode = false;
 let fire1DiscardSelectedIndices = new Set();
@@ -65,18 +51,6 @@ let selectedCardFaceUp = false;
 let cardPopupAckCount = 0;
 
 // -------------------- UI & Game Logic --------------------
-async function triggerCardEffect(card, playerId, trigger) {
-    const effectFunc = CardEffectLibrary[card.name]?.[trigger.toLowerCase()];
-    if (effectFunc) await effectFunc(playerId);
-}
-
-function coverCard(line, coveringCard, playerId) {
-    const cardBeingCovered = line[line.length - 1];
-    line.push(coveringCard);
-    if (cardBeingCovered.name === "Fire 0" && cardBeingCovered.faceUp) {
-        triggerCardEffect(cardBeingCovered, playerId, "covered");
-    }
-}
 
 function showCardPopup(card) {
   cardPopupAckCount = 0;
@@ -163,6 +137,10 @@ function setupLineClickDelegation() {
         alert("Cannot play cards during special effect selection.");
         return;
       }
+      if (gameState.actionTaken) {
+        alert("You already took an action this turn!");
+        return;
+      }
       if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
         alert("You must compile your protocol this turn; no other actions allowed.");
         return;
@@ -171,11 +149,10 @@ function setupLineClickDelegation() {
         alert("Please select a protocol to compile first.");
         return;
       }
-      if (playerId !== gameState.currentPlayer && selectedCardIndex !== null) {
+      if (playerId !== gameState.currentPlayer) {
         alert(`It's Player ${gameState.currentPlayer}'s turn. You can only play on your own protocols.`);
         return;
       }
-
       let lineDiv = e.target;
       while (lineDiv && !lineDiv.classList.contains('line')) {
         lineDiv = lineDiv.parentElement;
@@ -557,6 +534,10 @@ function renderHand() {
         updateDiscardConfirmButton();
         renderHand();
       } else {
+        if (gameState.actionTaken) {
+          alert("You already took an action this turn!");
+          return;
+        }
         if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
           alert("You must compile your protocol this turn; no other actions allowed.");
           return;
@@ -579,76 +560,76 @@ function renderHand() {
 }
 
 async function playCardOnLine(playerId, handIndex, lineIndex) {
-    if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
-        alert("Cannot play cards during special effect selection.");
-        return;
-    }
-    if (playerId !== gameState.currentPlayer) {
-        alert("It's not this player's turn!");
-        return;
-    }
-    if (gameState.mustCompileLineNextTurn[playerId] !== null) {
-        alert("You must compile your protocol this turn; no other actions allowed.");
-        return;
-    }
-    if (gameState.compileSelectionMode) {
-        alert("Please select a protocol to compile first.");
-        return;
-    }
+  if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
+    alert("Cannot play cards during special effect selection.");
+    return;
+  }
+  if (playerId !== gameState.currentPlayer) {
+    alert("It's not this player's turn!");
+    return;
+  }
+  if (gameState.actionTaken) {
+    alert("You already took an action this turn!");
+    return;
+  }
+  if (gameState.mustCompileLineNextTurn[playerId] !== null) {
+    alert("You must compile your protocol this turn; no other actions allowed.");
+    return;
+  }
+  if (gameState.compileSelectionMode) {
+    alert("Please select a protocol to compile first.");
+    return;
+  }
 
-    gameState.actionTaken = true;
+  const protocol = gameState.players[playerId].protocols[lineIndex];
 
-    const protocol = gameState.players[playerId].protocols[lineIndex];
-    const card = gameState.players[playerId].hand[handIndex];
-    const cardProtocol = card.name.split(' ')[0];
-    const lineProtocol = protocol;
+  const card = gameState.players[playerId].hand[handIndex];
+  const cardProtocol = card.name.split(' ')[0];
+  const lineProtocol = protocol;
 
-    if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
-        alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
-        return;
-    }
+  if (selectedCardFaceUp && cardProtocol !== lineProtocol) {
+    alert(`Face-up cards must be played on their protocol line: ${lineProtocol}`);
+    return;
+  }
 
-    const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
-    removedCard.faceUp = selectedCardFaceUp;
+  gameState.actionTaken = true;
 
-    // ✅ Only call coverCard. This handles placing AND Fire 0's effect.
-    coverCard(gameState.players[playerId].lines[lineIndex], removedCard, playerId);
+  const removedCard = gameState.players[playerId].hand.splice(handIndex, 1)[0];
+  removedCard.faceUp = selectedCardFaceUp;
 
-    selectedCardIndex = null;
-    selectedCardFaceUp = false;
-    updateFlipToggleButton();
+  gameState.players[playerId].lines[lineIndex].push(removedCard);
 
-    renderGameBoard();
+  selectedCardIndex = null;
+  selectedCardFaceUp = false;
+  updateFlipToggleButton();
+
+  renderGameBoard();
+  renderHand();
+  updateButtonsState();
+
+  // Fire 1 effect: if card is Fire 1 and played face up, trigger discard+delete sequence
+  if (removedCard.faceUp && removedCard.name === 'Fire 1') {
+    fire1DiscardMode = true;
+    fire1DiscardSelectedIndices.clear();
+    document.getElementById('discard-confirm-container').style.display = 'block';
+    updateFire1DiscardInstruction();
+    updateDiscardConfirmButton();
     renderHand();
-    updateButtonsState();
-
-    // Fire 1 has its own special flow
-    if (removedCard.faceUp && removedCard.name === 'Fire 1') {
-        fire1DiscardMode = true;
-        fire1DiscardSelectedIndices.clear();
-        document.getElementById('discard-confirm-container').style.display = 'block';
-        updateFire1DiscardInstruction();
-        updateDiscardConfirmButton();
-        renderHand();
-        return;
-    }
-
-    // Fire 0 immediate effect after play (middle)
-    if (removedCard.faceUp && removedCard.name === 'Fire 0') {
-        await triggerCardEffect(removedCard, playerId, 'middle');
-    }
-
-    // Standard flow: move to cache phase after any card is played
+  } else {
     setTimeout(() => {
-        gameState.phase = 'cache';
-        runPhase();
+      gameState.phase = 'cache';
+      runPhase();
     }, 100);
+  }
 }
-
 
 document.getElementById('refresh-button').addEventListener('click', () => {
   if (gameState.cacheDiscardMode || gameState.deleteSelectionMode || fire1DiscardMode || fire1DeleteSelectionMode) {
     alert("Cannot refresh during special effect selection.");
+    return;
+  }
+  if (gameState.actionTaken) {
+    alert("You already took an action this turn!");
     return;
   }
   if (gameState.mustCompileLineNextTurn[gameState.currentPlayer] !== null) {
@@ -741,43 +722,6 @@ function updateFire1DiscardInstruction() {
 
   instructionDiv.textContent = `Fire 1: Select exactly ${requiredDiscardCount} card(s) to discard. Selected: ${selectedCount}`;
 }
-
-async function handleFire0FlipEffect(playerId) {
-    const candidateCards = [];
-    [1, 2].forEach(pid => {
-        gameState.players[pid].lines.forEach((line, lineIndex) => {
-            if (line.length > 0) {
-                const topCard = line[line.length - 1];
-                if (topCard.name !== "Fire 0") {
-                    candidateCards.push({ playerId: pid, lineIndex, card: topCard });
-                }
-            }
-        });
-    });
-
-    if (candidateCards.length === 0) { alert("No valid cards to flip for Fire 0."); return; }
-
-    alert("Select a card to flip for Fire 0 effect.");
-    gameState.deleteSelectionMode = true;
-    renderGameBoard();
-
-    return new Promise((resolve) => {
-        candidateCards.forEach(({ playerId, lineIndex, card }) => {
-            const lineDiv = document.querySelector(`#player${playerId} .line[data-line="${lineIndex}"]`);
-            const cardDiv = lineDiv.querySelector(".card:last-child");
-            cardDiv.style.outline = "2px solid red";
-            cardDiv.onclick = () => {
-                cardDiv.onclick = null;
-                gameState.deleteSelectionMode = false;
-                card.faceUp = !card.faceUp;
-                if (card.faceUp) triggerCardEffect(card, playerId, "middle");
-                renderGameBoard();
-                resolve();
-            };
-        });
-    });
-}
-
 
 // Handle Fire 1 discard confirm
 async function handleFire1DiscardConfirm() {
@@ -1033,3 +977,4 @@ function handleDeleteSelection(playerId, lineIndex, cardIndex, card) {
   gameState.phase = 'cache';
   runPhase();
 }
+
