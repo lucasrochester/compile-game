@@ -42,8 +42,8 @@
           "name": "Life 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -54,7 +54,7 @@
           "name": "Light 0",
           "value": 0,
           "topEffect": "",
-          "middleEffect": "Flip 1 card. Draw cards equal to that card's value (2 if face down).",
+          "middleEffect": "Flip 1 card. Draw cards equal to that card's value.",
           "bottomEffect": ""
         },
         {
@@ -89,8 +89,8 @@
           "name": "Light 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -136,8 +136,8 @@
           "name": "Psychic 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -183,8 +183,8 @@
           "name": "Speed 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -230,8 +230,8 @@
           "name": "Gravity 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -277,8 +277,8 @@
           "name": "Water 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -324,8 +324,8 @@
           "name": "Darkness 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -364,8 +364,8 @@
           "name": "Love 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         },
         {
           "name": "Love 6",
@@ -383,8 +383,8 @@
           "name": "Hate 0",
           "value": 0,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "Delete 1 card."
+          "middleEffect": "Delete 1 card.",
+          "bottomEffect": ""
         },
         {
           "name": "Hate 1",
@@ -418,8 +418,8 @@
           "name": "Hate 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -458,15 +458,15 @@
           "name": "Death 4",
           "value": 4,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "Delete a card with a value of 0 or 1."
+          "middleEffect": "Delete a card with a value of 0 or 1.",
+          "bottomEffect": ""
         },
         {
           "name": "Death 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -505,15 +505,15 @@
           "name": "Apathy 4",
           "value": 4,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You may flip 1 of your face up covered cards."
+          "middleEffect": "You may flip 1 of your face up covered cards.",
+          "bottomEffect": ""
         },
         {
           "name": "Apathy 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -552,8 +552,8 @@
           "name": "Metal 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         },
         {
           "name": "Metal 6",
@@ -606,8 +606,8 @@
           "name": "Plague 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -646,15 +646,15 @@
           "name": "Spirit 4",
           "value": 4,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "Swap the positions of 2 of your protocols."
+          "middleEffect": "Swap the positions of 2 of your protocols.",
+          "bottomEffect": ""
         },
         {
           "name": "Spirit 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     },
@@ -700,8 +700,8 @@
           "name": "Fire 5",
           "value": 5,
           "topEffect": "",
-          "middleEffect": "",
-          "bottomEffect": "You discard 1 card."
+          "middleEffect": "You discard 1 card.",
+          "bottomEffect": ""
         }
       ]
     }
